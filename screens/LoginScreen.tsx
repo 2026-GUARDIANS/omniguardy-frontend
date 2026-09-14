@@ -21,7 +21,7 @@ export default function LoginScreen({ setIsLoggedIn, setCurrentScreen, setToken}
         setIsLoading(true);
 
         try {
-              const LOGIN_API_URL = "http://10.215.74.143:8080/api/auth/login";
+              const LOGIN_API_URL = "http://10.69.37.143:8080/api/auth/login";
               const response = await fetch(LOGIN_API_URL, {
                 method: "POST",
                 headers: {

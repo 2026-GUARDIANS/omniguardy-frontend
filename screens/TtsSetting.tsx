@@ -22,7 +22,7 @@ export default function TtsSetting({ token }: TtsSettingProps) {
       setIsLoading(true);
 
       try {
-        const response = await fetch("http://10.215.74.143:8080/api/tts", {
+        const response = await fetch("http://10.69.37.143:8080/api/tts", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

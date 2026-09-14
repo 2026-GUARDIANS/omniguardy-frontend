@@ -26,7 +26,7 @@ export default function SignupScreen({ setIsLoggedIn, setCurrentScreen, setToken
 
     try {
       // 💡 현재 설정된 핫스팟 백엔드 회원가입 API 주소
-      const SIGNUP_API_URL = "http://10.215.74.143:8080/api/auth/signup";
+      const SIGNUP_API_URL = "http://10.69.37.143:8080/api/auth/signup";
 
       const response = await fetch(SIGNUP_API_URL, {
         method: "POST",

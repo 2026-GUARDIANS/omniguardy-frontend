@@ -10,7 +10,7 @@ interface CctvScreenProps {
 }
 
 export default function CctvScreen({ token }: CctvScreenProps) {
-  const BASE_URL = "http://10.215.74.143:8080";
+  const BASE_URL = "http://10.69.37.143:8080";
 
   const [visionScore, setVisionScore] = useState(0);
   const [audioScore, setAudioScore] = useState(0);

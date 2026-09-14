@@ -1,284 +1,91 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useState } from "react";
+import { Alert, Modal, ScrollView, StatusBar, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-import React, { useState, useEffect, useRef } from "react";
-import { SafeAreaView, View, Text, TouchableOpacity, ActivityIndicator, Animated, Platform } from "react-native";
-import { styles } from "./styles/styles";
-import { Ionicons } from '@expo/vector-icons';
-
-import CctvScreen from "./screens/CctvScreen";
-import TtsSetting from "./screens/TtsSetting";
-import LoginScreen from "./screens/LoginScreen";
-import SignupScreen from "./screens/SignupScreen";
-
-const SIDEBAR_WIDTH = 250;
-const BASE_URL = "http://10.215.74.143:8080";
-const saveItem = async (key: string, value: string) => {
-  if (Platform.OS === "web") {
-    localStorage.setItem(key, value);
-  } else {
-    await AsyncStorage.setItem(key, value);
-  }
+const iconMap: Record<string, string> = {
+  "shield-checkmark": "◈", "shield-checkmark-outline": "◇", "notifications-outline": "♧",
+  "home-outline": "⌂", "list-outline": "☷", "videocam-outline": "▣", "videocam": "▣",
+  "settings-outline": "⚙", "megaphone-outline": "◖", "funnel-outline": "▽", "search": "⌕",
+  "warning": "!", "warning-outline": "!", "close": "×", "volume-high-outline": "◖"
 };
+function Icon({ name, size = 18, color = "#101828" }: { name: string; size?: number; color?: string }) {
+  return <Text style={{ fontSize: size, lineHeight: size + 2, color, fontWeight: "700" }}>{iconMap[name] || "•"}</Text>;
+}
+const Ionicons = Icon;
 
-const getItem = async (key: string) => {
-  if (Platform.OS === "web") {
-    return localStorage.getItem(key);
-  } else {
-    return await AsyncStorage.getItem(key);
-  }
-};
+type Tab = "home" | "log" | "cctv" | "settings";
+type Tone = "danger" | "warning" | "safe";
+const green = "#45B77B";
+const events = [
+  { id: "1", title: "비명 소리 감지", detail: "현관 앞 고데시벨 소음 감지, CCTV 녹화 완료", time: "10:14", tone: "danger" as Tone },
+  { id: "2", title: "수상한 배회 감지", detail: "초인종 부근 8초 배회 후 자동 경고 방송 작동", time: "09:45", tone: "warning" as Tone },
+  { id: "3", title: "방문객 통화 발생", detail: "사용자 실시간 TTS 기능 활용 현관 방문객 대응 완료", time: "08:12", tone: "safe" as Tone },
+  { id: "4", title: "금속 충격음 감지", detail: "철제 마찰 소음 감지되어 긴급 카메라 자동 스냅샷 촬영", time: "어제 22:15", tone: "danger" as Tone },
+  { id: "5", title: "택배 배송 완료", detail: "문 앞 물체 감지, 택배 기사 전달 완료", time: "어제 14:20", tone: "safe" as Tone },
+];
+const tones = { danger: { label: "위험", color: "#DF5A55", bg: "#FCE9E8" }, warning: { label: "주의", color: "#E4A332", bg: "#FFF3DE" }, safe: { label: "정상", color: green, bg: "#E7F6EE" } };
+const toneOf = (tone: Tone) => tones[tone];
 
-const removeItem = async (key: string) => {
-  if (Platform.OS === "web") {
-    localStorage.removeItem(key);
-  } else {
-    await AsyncStorage.removeItem(key);
-  }
-};
+function Card({ children, style }: { children: React.ReactNode; style?: object }) { return <View style={[s.card, style]}>{children}</View>; }
+function Badge({ tone }: { tone: Tone }) { const x = toneOf(tone); return <View style={[s.badge, { borderColor: x.color, backgroundColor: x.bg }]}><Text style={{ color: x.color, fontWeight: "700", fontSize: 12 }}>{x.label}</Text></View>; }
+function Header({ title, right }: { title: string; right?: React.ReactNode }) { return <View style={s.header}><View style={s.titleRow}><View style={s.headerLogo}><Icon name="shield-checkmark" size={17} color={green} /></View><Text style={s.headerTitle}>{title}</Text></View>{right}</View>; }
+function TabBar({ active, onChange }: { active: Tab; onChange: (tab: Tab) => void }) { const data: { id: Tab; label: string; icon: string }[] = [{ id: "home", label: "홈", icon: "home-outline" }, { id: "log", label: "기록", icon: "list-outline" }, { id: "cctv", label: "CCTV", icon: "videocam-outline" }, { id: "settings", label: "설정", icon: "settings-outline" }]; return <View style={s.tabs}>{data.map(x => <TouchableOpacity key={x.id} style={s.tab} onPress={() => onChange(x.id)}><Icon name={x.icon} size={27} color={active === x.id ? green : "#737B8A"} /><Text style={[s.tabText, active === x.id && { color: green, fontWeight: "700" }]}>{x.label}</Text></TouchableOpacity>)}</View>; }
 
 export default function App() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const slideAnim = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
-
-  const [currentScreen, setCurrentScreen] = useState("LOGIN");
-
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
-
-  const handleNavigation = async (screenName: string) => {
-    setCurrentScreen(screenName);
-    setIsSidebarOpen(false);
-
-    await saveItem("currentScreen", screenName);
-  };
-
-  const handleLoginSuccess = async (userToken: string) => {
-    setToken(userToken);
-    setIsLoggedIn(true);
-
-    await saveItem("accessToken", userToken);
-  };
-
-  // 사용자가 우측 하단에서 직접 로그아웃 누를 때
-  const cleanUpLogout = () => {
-    setIsLoggedIn(false);
-    setToken(null);
-    handleNavigation("LOGIN");
-
-    removeItem("accessToken");
-    removeItem("currentScreen");
-    alert("로그아웃 되었습니다.");
-  };
-
-
-  const cleanUpLogoutSilent = () => {
-    setIsLoggedIn(false);
-    setToken(null);
-    handleNavigation("LOGIN");
-
-    removeItem("accessToken");
-    removeItem("currentScreen");
-  };
-
-  // 🔄 앱 최초 구동 및 새로고침 시 서버 상태 실시간 검증
-  useEffect(() => {
-    const verifyServerSession = async () => {
-      try {
-        const savedToken = await getItem("accessToken");
-        const savedScreen = await getItem("currentScreen");
-
-        if (!savedToken) {
-          handleNavigation("LOGIN");
-          setIsInitializing(false);
-          return;
-        }
-
-        if (savedScreen) {
-          setCurrentScreen(savedScreen);
-        }
-
-          console.log("🔄 로컬 토큰 발견, 서버 검증 시작...");
-
-          // 스프링부트 서버 인증 상태 체크
-          const response = await fetch(`${BASE_URL}/api/auth/refresh`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${savedToken}`
-            },
-            credentials: "include"
-          });
-
-          // 💡 [핵심 교정] 단순 새로고침 시 401이 나더라도 로컬 토큰이 있으면 로그인 유지!
-          // 서버가 살아있다는 증거이므로 로그아웃 시키지 않고 로그인 상태를 복구합니다.
-          if (response.status === 401 || response.ok) {
-            console.log("🟢 서버 가동 중 확인 - 로그인 상태를 유지합니다.");
-            setToken(savedToken);
-            setIsLoggedIn(true);
-            if (savedScreen) setCurrentScreen(savedScreen);
-
-            // 만약 서버에서 새 토큰을 정상적으로 받아왔다면 교체 유연성 확보
-            if (response.ok) {
-              const result = await response.json();
-              if (result.success && result.data?.accessToken) {
-                 setToken(result.data.accessToken);
-                 await saveItem("accessToken", result.data.accessToken);
-              }
-            }
-          } else {
-          // 401 외에 의도치 않은 다른 에러코드(500 등)가 올 때만 로그아웃
-            console.log(`❌ 서버 에러 응답 (Status: ${response.status}) -> 자동 로그아웃`);
-            cleanUpLogoutSilent();
-          }
-
-      } catch (error) {
-        console.log("🚨 백엔드 서버가 리셋되었거나 꺼져있음: 로그인 화면으로 강제 이동 및 토큰 폐기");
-        cleanUpLogoutSilent();
-      } finally {
-        setIsInitializing(false);
-      }
-    };
-
-    verifyServerSession();
-  }, []);
-
-  // 사이드바 애니메이션 리스너
-  useEffect(() => {
-    Animated.timing(slideAnim, {
-      toValue: isSidebarOpen ? 0 : -SIDEBAR_WIDTH,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  }, [isSidebarOpen]);
-
-  // 백엔드 로그아웃 API 호출
-  const handleLogout = async () => {
-    try {
-      if (!token) {
-        cleanUpLogout();
-        return;
-      }
-      await fetch(`${BASE_URL}/api/auth/logout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        credentials: "include"
-      });
-    } catch (error) {
-      console.error("로그아웃 통신 에러:", error);
-    } finally {
-      cleanUpLogout();
-    }
-  };
-
-  if (isInitializing) {
-    return (
-      <View style={[styles.phoneFrame, { justifyContent: "center", alignItems: "center", backgroundColor: "#1E2024" }]}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={{ color: "#aaa", marginTop: 12, fontSize: 14 }}>보안 세션을 확인하는 중...</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.phoneFrame}>
-
-      {/* 사이드바 영역 */}
-      <Animated.View
-        style={[
-          styles.sidebar,
-          {
-            position: 'absolute',
-            left: slideAnim,
-            width: SIDEBAR_WIDTH,
-            zIndex: 999,
-            height: '100%'
-          }
-        ]}
-      >
-        <View style={styles.sidebarHeader}>
-          <Text style={styles.sidebarMenuTitle}>메뉴</Text>
-          <TouchableOpacity onPress={() => setIsSidebarOpen(false)}>
-            <Ionicons name="close-outline" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ flex: 1 }}>
-          <TouchableOpacity
-            style={[
-              styles.sidebarItem,
-              { flexDirection: "row", alignItems: "center" },
-              currentScreen === "CCTV" && { backgroundColor: "#2D2F35" }
-            ]}
-            onPress={() => handleNavigation("CCTV")}
-          >
-            <Ionicons name="videocam-outline" size={20} color="#fff" />
-            <Text style={[styles.sidebarItemText, { marginLeft: 10 }]}>CCTV 영상 분석</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.sidebarItem,
-              { flexDirection: "row", alignItems: "center" },
-              currentScreen === "TTS" && { backgroundColor: "#2D2F35" }
-            ]}
-            onPress={() => handleNavigation("TTS")}
-          >
-            <Ionicons name="volume-high-outline" size={20} color="#fff" />
-            <Text style={[styles.sidebarItemText, { marginLeft: 10 }]}>음성 경고 설정</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ alignItems: "flex-end", marginTop: "auto", paddingBottom: 20 }}>
-          {isLoggedIn ? (
-            <TouchableOpacity onPress={handleLogout} style={{ padding: 5, flexDirection: "row", alignItems: "center" }}>
-              <Ionicons name="log-out-outline" size={16} color="#aaa" style={{ marginRight: 4 }} />
-              <Text style={{ color: "#aaa", fontSize: 13, fontWeight: "600" }}>로그아웃</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity onPress={() => handleNavigation("LOGIN")} style={{ padding: 5, flexDirection: "row", alignItems: "center" }}>
-              <Ionicons name="log-in-outline" size={16} color="#aaa" style={{ marginRight: 4 }} />
-              <Text style={{ color: "#aaa", fontSize: 14, fontWeight: "600" }}>로그인/회원가입</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </Animated.View>
-
-      {/* 메인 콘텐츠 영역 */}
-      <SafeAreaView style={styles.container}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => setIsSidebarOpen(true)} style={styles.hamburgerButton}>
-            <Ionicons name="menu-outline" size={24} color="black" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitleText}>
-            {currentScreen === "CCTV" && "OmniGuardy CCTV"}
-            {currentScreen === "TTS" && "음성 경고 설정"}
-            {currentScreen === "LOGIN" && "로그인"}
-            {currentScreen === "SIGNUP" && "회원가입"}
-          </Text>
-          <View style={{ width: 32 }} />
-        </View>
-
-        {currentScreen === "CCTV" && <CctvScreen token={token} />}
-        {currentScreen === "TTS" && <TtsSetting token={token} />}
-        {currentScreen === "LOGIN" && (
-          <LoginScreen
-            setIsLoggedIn={setIsLoggedIn}
-            setCurrentScreen={handleNavigation}
-            setToken={handleLoginSuccess}
-          />
-        )}
-        {currentScreen === "SIGNUP" && (
-          <SignupScreen
-            setIsLoggedIn={setIsLoggedIn}
-            setCurrentScreen={handleNavigation}
-            setToken={handleLoginSuccess}
-          />
-        )}
-      </SafeAreaView>
-    </View>
-  );
+  const [loggedIn, setLoggedIn] = useState(false), [signup, setSignup] = useState(false), [tab, setTab] = useState<Tab>("home"), [selected, setSelected] = useState<(typeof events)[number] | null>(null), [danger, setDanger] = useState(false), [voice, setVoice] = useState(true), [message, setMessage] = useState("위험 행동이 감지되었습니다. 즉시 중단해 주세요."), [device, setDevice] = useState(false), [profileOpen, setProfileOpen] = useState(false);
+  if (!loggedIn) return <SafeAreaProvider><Auth signup={signup} onLogin={() => setLoggedIn(true)} onSignup={() => { setSignup(false); setLoggedIn(true); }} onToggle={() => setSignup(!signup)} /></SafeAreaProvider>;
+  return <SafeAreaProvider><SafeAreaView style={s.app} edges={["top", "bottom"]}><StatusBar barStyle="dark-content" />
+    {tab === "home" && <Home log={() => setTab("log")} cctv={() => setTab("cctv")} danger={() => setDanger(true)} />}
+    {tab === "log" && <Log select={setSelected} />}
+    {tab === "cctv" && <Cctv danger={() => setDanger(true)} />}
+    {tab === "settings" && <Settings voice={voice} setVoice={setVoice} message={message} setMessage={setMessage} device={device} setDevice={setDevice} openProfile={() => setProfileOpen(true)} />}
+    <TabBar active={tab} onChange={setTab} /><EventModal event={selected} close={() => setSelected(null)} cctv={() => { setSelected(null); setTab("cctv"); }} /><DangerModal visible={danger} close={() => setDanger(false)} cctv={() => { setDanger(false); setTab("cctv"); }} />
+    <ProfileModal visible={profileOpen} close={() => setProfileOpen(false)} />
+  </SafeAreaView></SafeAreaProvider>;
 }
+function Auth({ signup, onLogin, onSignup, onToggle }: { signup: boolean; onLogin: () => void; onSignup: () => void; onToggle: () => void }) {
+  return <SafeAreaView style={s.app} edges={["top", "bottom"]}><StatusBar barStyle="dark-content" />
+    <ScrollView contentContainerStyle={[s.auth, signup && s.signupAuth]} keyboardShouldPersistTaps="handled">
+      <View style={s.logo}><Ionicons name="shield-checkmark" size={40} color={green} /></View>
+      <Text style={s.logoTitle}>OmniGuardy AI</Text>
+      <Text style={[s.muted, { textAlign: "center", marginBottom: 16 }]}>AI 기반 안심 보안 시스템</Text>
+      {signup && <Text style={s.authIntro}>계정 정보를 입력해 주세요.</Text>}
+      {signup && <TextInput style={s.input} placeholder="이름" placeholderTextColor="#98A2B3" />}
+      <TextInput style={s.input} placeholder="이메일" placeholderTextColor="#98A2B3" autoCapitalize="none" keyboardType="email-address" />
+      <TextInput style={s.input} placeholder="비밀번호" placeholderTextColor="#98A2B3" secureTextEntry />
+      {signup && <TextInput style={s.input} placeholder="비밀번호 확인" placeholderTextColor="#98A2B3" secureTextEntry />}
+      {signup && <TextInput style={s.input} placeholder="전화번호 (예: 010-0000-0000)" placeholderTextColor="#98A2B3" keyboardType="phone-pad" />}
+      {signup && <Text style={s.phoneHint}>전화번호는 긴급 알림 및 본인 확인에 사용됩니다.</Text>}
+      <TouchableOpacity style={[s.primary, s.authPrimary]} onPress={signup ? onSignup : onLogin}><Text style={s.primaryText}>{signup ? "가입 완료" : "로그인"}</Text></TouchableOpacity>
+      <TouchableOpacity onPress={onToggle} style={s.authLink}><Text style={s.muted}>{signup ? "이미 계정이 있으신가요? " : "계정이 없으신가요? "}<Text style={{ color: green, fontWeight: "700" }}>{signup ? "로그인" : "회원가입"}</Text></Text></TouchableOpacity>
+      {!signup && <Text style={[s.muted, { textAlign: "center", fontSize: 12 }]}>데모에서는 아무 값이나 입력해도 로그인됩니다.</Text>}
+    </ScrollView>
+  </SafeAreaView>;
+}
+function Home({ log, cctv, danger }: { log: () => void; cctv: () => void; danger: () => void }) { return <ScrollView style={s.scroll} contentContainerStyle={s.content}><Header title="OmniGuardy AI" right={<TouchableOpacity style={s.iconBtn}><Ionicons name="notifications-outline" size={21} color="#667085" /></TouchableOpacity>} /><Card><View style={s.status}><View style={s.statusIcon}><Ionicons name="shield-checkmark" size={25} color={green} /></View><View><Text style={s.heading}>현재 상태: 정상 감시 중</Text><Text style={s.muted}>마이크 · 영상 감지 중 | 모든 장치 정상</Text></View></View></Card><Card><Text style={s.heading}>마이크 감지 상태</Text><View style={s.wave}>{[7, 13, 19, 10, 21, 31, 14, 23, 11, 36, 16, 12, 20, 9, 18, 12, 15, 9].map((h, i) => <View key={i} style={[s.bar, { height: h, backgroundColor: i === 9 ? green : "#D0D5DD" }]} />)}</View><View style={s.between}><Text style={s.muted}>마이크 실시간 감지 중 · 상태: 정상</Text><Text style={{ color: green, fontWeight: "800", fontSize: 12 }}>LIVE</Text></View></Card><View style={s.between}><Text style={s.section}>최근 감지 이벤트</Text><TouchableOpacity onPress={log}><Text style={s.more}>더보기</Text></TouchableOpacity></View>{events.slice(0, 2).map(e => <TouchableOpacity key={e.id} onPress={() => e.tone === "danger" ? danger() : log()}><EventCard event={e} /></TouchableOpacity>)}<View style={s.quickRow}><Quick icon="videocam-outline" label="CCTV 확인" press={cctv} /><Quick icon="megaphone-outline" label="긴급 경고" press={danger} danger /></View></ScrollView>; }
+function Quick({ icon, label, press, danger }: { icon: string; label: string; press: () => void; danger?: boolean }) { return <TouchableOpacity style={s.quick} onPress={press}><Icon name={icon} size={27} color={danger ? "#DF5A55" : "#596273"} /><Text style={s.quickText}>{label}</Text></TouchableOpacity>; }
+function EventCard({ event }: { event: (typeof events)[number] }) { const x = toneOf(event.tone); return <Card style={s.event}><View style={[s.eventIcon, { backgroundColor: x.bg }]}><Ionicons name="shield-checkmark-outline" color={x.color} size={25} /></View><View style={{ flex: 1 }}><View style={s.between}><Text style={s.eventTitle}>{event.title}</Text><Badge tone={event.tone} /></View><Text style={s.detail}>{event.detail}</Text><Text style={s.muted}>{event.time}</Text></View></Card>; }
+function Log({ select }: { select: (event: (typeof events)[number]) => void }) { return <ScrollView style={s.scroll} contentContainerStyle={s.content}><View style={[s.header, { marginTop: 12 }]}><Text style={s.pageTitle}>이벤트 기록</Text><View style={s.filter}><Ionicons name="funnel-outline" size={18} color="#667085" /><Text style={s.muted}>최신순</Text></View></View><View style={s.search}><Ionicons name="search" size={22} color="#7A8495" /><Text style={s.searchText}>이벤트 유형, 감지된 소리 검색...</Text></View>{events.map(e => <TouchableOpacity key={e.id} onPress={() => select(e)}><EventCard event={e} /></TouchableOpacity>)}</ScrollView>; }
+function Cctv({ danger }: { danger: () => void }) { const [analyzed, setAnalyzed] = useState(false); return <ScrollView style={s.scroll} contentContainerStyle={s.content}><Header title="CCTV 실시간" right={<View style={s.live}><View style={s.dot} /><Text style={s.liveText}>LIVE</Text></View>} /><Card style={s.camera}><Ionicons name="videocam" size={52} color="#98A2B3" /><Text style={{ color: "#D0D5DD", fontWeight: "700", marginTop: 10 }}>현관 카메라 · 실시간 영상</Text><Text style={{ color: "#98A2B3", fontSize: 12, marginTop: 4 }}>카메라 연결 상태: 정상 (1080p)</Text></Card><TouchableOpacity style={s.primary} onPress={() => setAnalyzed(true)}><Text style={s.primaryText}>{analyzed ? "분석 완료 · 최신 결과 보기" : "AI 영상 분석 시작"}</Text></TouchableOpacity>{analyzed && <><Card><Text style={s.heading}>AI 분석 결과</Text><Detail label="감지 행동" value="수상한 배회" /><Detail label="위험 점수" value="42 / 100 · 주의" color="#E4A332" /><Detail label="음성 감지" value="정상" color={green} /></Card><TouchableOpacity style={s.dangerBtn} onPress={danger}><Ionicons name="warning-outline" size={18} color="#fff" /><Text style={s.primaryText}>긴급 경고 발송</Text></TouchableOpacity></>}</ScrollView>; }
+function Settings({ voice, setVoice, message, setMessage, device, setDevice, openProfile }: { voice: boolean; setVoice: (x: boolean) => void; message: string; setMessage: (x: string) => void; device: boolean; setDevice: (x: boolean) => void; openProfile: () => void }) {
+  return <ScrollView style={s.scroll} contentContainerStyle={s.content}>
+    <View style={[s.between, { marginTop: 12 }]}><Text style={s.pageTitle}>설정</Text><TouchableOpacity accessibilityRole="button" accessibilityLabel="내 프로필" onPress={openProfile} style={s.profileButton}><Text style={s.profileButtonIcon}>●</Text><Text style={s.profileButtonText}>내 프로필</Text></TouchableOpacity></View>
+    <Card><Text style={s.heading}>하드웨어 디바이스 관리 (Raspberry Pi)</Text><Detail label="디바이스 연결 상태" value={device ? "연결됨 (Online)" : "미등록"} color={device ? green : "#667085"} /><Detail label="마이크 감지 모듈" value="동작 중" color={green} /><Detail label="CCTV 카메라 모듈" value="동작 중 (1080p)" color={green} /><TouchableOpacity style={s.settingAction} onPress={() => setDevice(!device)}><Text style={s.smallBtnText}>{device ? "디바이스 연결 해제" : "디바이스 관리"}</Text></TouchableOpacity></Card>
+    <Card><Text style={s.heading}>알림 설정</Text><View style={[s.between, { marginTop: 10 }]}><Text style={s.settingText}>백그라운드 푸시 알림 받기</Text><Switch value={voice} onValueChange={setVoice} trackColor={{ false: "#D0D5DD", true: "#A9DEC2" }} thumbColor={voice ? green : "#fff"} /></View><Detail label="이상 감지 민감도" value="보통 (Standard)" /><View style={s.sensitivity}><Text style={s.sensitivityItem}>낮음</Text><Text style={[s.sensitivityItem, s.sensitivityActive]}>보통</Text><Text style={s.sensitivityItem}>높음</Text></View></Card>
+    <Card><Text style={s.heading}>음성 경고 설정</Text><TextInput value={message} onChangeText={setMessage} multiline style={s.message} /><Text style={[s.muted, { textAlign: "right" }]}>{message.length} / 100</Text><TouchableOpacity style={s.outline} onPress={() => Alert.alert("테스트 음성", message)}><Ionicons name="volume-high-outline" size={17} color={green} /><Text style={{ color: green, fontWeight: "700" }}>테스트 음성 송출</Text></TouchableOpacity></Card>
+  </ScrollView>;
+}
+function ProfileModal({ visible, close }: { visible: boolean; close: () => void }) {
+  return <Modal visible={visible} animationType="slide" onRequestClose={close}><SafeAreaView style={s.app} edges={["top", "bottom"]}><ScrollView contentContainerStyle={s.content}>
+    <View style={[s.between, { marginTop: 8 }]}><TouchableOpacity onPress={close} style={s.backButton}><Text style={s.backText}>‹</Text><Text style={s.backLabel}>내 프로필</Text></TouchableOpacity><TouchableOpacity onPress={close}><Text style={s.closeText}>닫기</Text></TouchableOpacity></View>
+    <Card style={s.profileCard}><View style={s.avatar}><Text style={s.avatarText}>홍</Text></View><View style={{ flex: 1 }}><Text style={s.profileName}>홍길동</Text><Text style={s.muted}>hong@example.com</Text><Text style={s.muted}>010-1234-5678</Text></View><TouchableOpacity style={s.editButton}><Text style={s.smallBtnText}>편집</Text></TouchableOpacity></Card>
+    <Card><View style={s.between}><Text style={s.heading}>보호자 연락처</Text><Text style={s.muted}>2명 등록</Text></View><ProfileContact name="김부모" relation="부모" phone="010-9876-5432" /><ProfileContact name="이형제" relation="형제" phone="010-5555-4444" /><TouchableOpacity style={s.addContact}><Text style={s.smallBtnText}>+ 보호자 추가</Text></TouchableOpacity></Card>
+    <Card><Text style={s.heading}>계정 보안</Text><Detail label="비밀번호 변경" value="›" /><Detail label="긴급 비밀번호 (Silent Signal) 설정" value="›" color="#DF5A55" /></Card>
+    <TouchableOpacity style={s.logoutButton} onPress={close}><Text style={s.logoutText}>로그아웃</Text></TouchableOpacity>
+  </ScrollView></SafeAreaView></Modal>;
+}
+function ProfileContact({ name, relation, phone }: { name: string; relation: string; phone: string }) { return <View style={s.contactRow}><View style={s.contactAvatar}><Text style={s.smallBtnText}>●</Text></View><View style={{ flex: 1 }}><View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}><Text style={s.contactName}>{name}</Text><Text style={s.relation}>{relation}</Text></View><Text style={s.muted}>{phone}</Text></View><Text style={s.chevron}>›</Text></View>; }
+function Detail({ label, value, color }: { label: string; value: string; color?: string }) { return <View style={s.result}><Text style={s.muted}>{label}</Text><Text style={{ flex: 1, textAlign: "right", fontWeight: "700", color: color || "#1D2939" }}>{value}</Text></View>; }
+function EventModal({ event, close, cctv }: { event: (typeof events)[number] | null; close: () => void; cctv: () => void }) { if (!event) return null; const x = toneOf(event.tone); return <Modal transparent animationType="slide" visible onRequestClose={close}><View style={s.backdrop}><View style={s.sheet}><View style={s.handle} /><View style={s.between}><Text style={s.sheetTitle}>이벤트 상세</Text><TouchableOpacity onPress={close}><Ionicons name="close" size={24} color="#475467" /></TouchableOpacity></View><View style={[s.hero, { backgroundColor: x.bg }]}><Ionicons name="shield-checkmark" size={36} color={x.color} /><Text style={[s.heroTitle, { color: x.color }]}>{event.title}</Text><Badge tone={event.tone} /></View><Card><Detail label="감지 시각" value={event.time} /><Detail label="분석 결과" value={event.detail} /><Detail label="AI 위험도" value={x.label} color={x.color} /></Card><TouchableOpacity style={s.primary} onPress={cctv}><Text style={s.primaryText}>CCTV 영상 확인</Text></TouchableOpacity></View></View></Modal>; }
+function DangerModal({ visible, close, cctv }: { visible: boolean; close: () => void; cctv: () => void }) { return <Modal transparent animationType="fade" visible={visible} onRequestClose={close}><View style={s.backdrop}><View style={s.sheet}><View style={s.handle} /><View style={s.dangerHero}><Ionicons name="warning" size={43} color="#DF5A55" /><Text style={s.dangerTitle}>위험 감지!</Text><Text style={s.muted}>현관 앞 비정상 음원이 감지되었습니다.</Text></View><Card><Detail label="감지된 소리" value="비명 / 충격음" color="#DF5A55" /><Detail label="감지 시각" value="오전 10:14:02" /><Detail label="AI 위험 점수" value="87 / 100" color="#DF5A55" /></Card><TouchableOpacity style={s.dangerBtn} onPress={cctv}><Text style={s.primaryText}>실시간 영상 확인하기</Text></TouchableOpacity><TouchableOpacity onPress={close} style={{ alignItems: "center", padding: 7 }}><Text style={s.muted}>나중에 확인</Text></TouchableOpacity></View></View></Modal>; }
+const s = StyleSheet.create({ app:{flex:1,backgroundColor:"#fff"},scroll:{flex:1},content:{padding:20,paddingBottom:24,gap:12},header:{flexDirection:"row",justifyContent:"space-between",alignItems:"center",paddingVertical:11},titleRow:{flexDirection:"row",alignItems:"center",gap:8},headerLogo:{width:29,height:29,backgroundColor:"#E7F6EE",borderRadius:8,alignItems:"center",justifyContent:"center"},headerTitle:{fontSize:20,fontWeight:"800",color:"#101828"},pageTitle:{fontSize:29,fontWeight:"800",color:"#101828"},iconBtn:{backgroundColor:"#F2F4F7",padding:9,borderRadius:11},card:{backgroundColor:"#F8FAFC",borderWidth:1,borderColor:"#E4E7EC",borderRadius:20,padding:17},status:{flexDirection:"row",alignItems:"center",gap:12},statusIcon:{width:49,height:49,borderRadius:14,backgroundColor:"#E7F6EE",alignItems:"center",justifyContent:"center"},heading:{color:"#101828",fontWeight:"800",fontSize:15},muted:{color:"#667085",fontSize:12,lineHeight:18},wave:{height:52,flexDirection:"row",alignItems:"center",justifyContent:"center",gap:4,marginTop:8},bar:{width:4,borderRadius:3},between:{flexDirection:"row",alignItems:"center",justifyContent:"space-between",gap:8},section:{fontSize:16,fontWeight:"800",color:"#1D2939"},more:{color:green,fontWeight:"700",fontSize:13},event:{flexDirection:"row",gap:13},eventIcon:{width:47,height:47,borderRadius:15,alignItems:"center",justifyContent:"center"},eventTitle:{fontSize:15,fontWeight:"800",color:"#101828",flex:1},detail:{fontSize:12,color:"#667085",marginVertical:5,lineHeight:17},badge:{borderWidth:1.5,paddingHorizontal:9,paddingVertical:4,borderRadius:9},quickRow:{flexDirection:"row",gap:10},quick:{flex:1,alignItems:"center",gap:6,padding:15,borderRadius:16,backgroundColor:"#F8FAFC",borderWidth:1,borderColor:"#E4E7EC"},quickText:{fontSize:13,fontWeight:"700",color:"#344054"},tabs:{flexDirection:"row",height:70,borderTopWidth:1,borderColor:"#EAECF0",backgroundColor:"#fff"},tab:{flex:1,alignItems:"center",justifyContent:"center",gap:3},tabText:{color:"#737B8A",fontSize:11},filter:{flexDirection:"row",gap:5,alignItems:"center",backgroundColor:"#F4F5F7",padding:10,borderRadius:12},search:{flexDirection:"row",alignItems:"center",gap:10,borderRadius:14,borderWidth:1,borderColor:"#DDE1E7",backgroundColor:"#F8FAFC",padding:16,marginVertical:10},searchText:{color:"#7A8495",fontSize:15},live:{flexDirection:"row",alignItems:"center",gap:5,backgroundColor:"#FCE9E8",padding:7,borderRadius:9},dot:{height:7,width:7,borderRadius:4,backgroundColor:"#DF5A55"},liveText:{color:"#DF5A55",fontWeight:"800",fontSize:11},camera:{height:210,backgroundColor:"#273042",alignItems:"center",justifyContent:"center",borderColor:"#273042"},primary:{backgroundColor:green,borderRadius:13,paddingVertical:15,alignItems:"center",justifyContent:"center"},primaryText:{color:"#fff",fontSize:15,fontWeight:"800"},dangerBtn:{flexDirection:"row",justifyContent:"center",alignItems:"center",gap:8,backgroundColor:"#DF5A55",borderRadius:13,paddingVertical:15},result:{flexDirection:"row",justifyContent:"space-between",alignItems:"flex-start",paddingVertical:9,borderBottomWidth:1,borderBottomColor:"#EAECF0"},label:{color:"#667085",fontSize:13,fontWeight:"700",marginTop:7},message:{minHeight:82,marginTop:10,padding:12,backgroundColor:"#fff",borderRadius:12,borderWidth:1,borderColor:"#DDE1E7",color:"#1D2939",textAlignVertical:"top"},outline:{flexDirection:"row",justifyContent:"center",alignItems:"center",gap:7,paddingVertical:12,borderRadius:12,borderWidth:1.5,borderColor:green,marginTop:10},smallBtn:{borderRadius:9,backgroundColor:"#E7F6EE",paddingHorizontal:10,paddingVertical:8},smallBtnText:{color:green,fontSize:12,fontWeight:"800"},auth:{flexGrow:1,justifyContent:"center",padding:24},signupAuth:{justifyContent:"flex-start",paddingTop:28},authIntro:{color:"#667085",fontSize:13,marginBottom:2},authPrimary:{marginTop:18},phoneHint:{color:"#667085",fontSize:12,marginTop:7},logo:{height:72,width:72,backgroundColor:"#E7F6EE",borderRadius:21,alignItems:"center",justifyContent:"center",alignSelf:"center",marginBottom:12},logoTitle:{textAlign:"center",fontSize:24,fontWeight:"800",color:"#101828"},input:{borderWidth:1,borderColor:"#DDE1E7",backgroundColor:"#F8FAFC",borderRadius:12,padding:14,color:"#1D2939",marginTop:12},authLink:{alignItems:"center",padding:16},profileButton:{flexDirection:"row",alignItems:"center",gap:6,borderWidth:1.5,borderColor:green,borderRadius:20,paddingHorizontal:14,paddingVertical:8},profileButtonIcon:{color:green,fontSize:10},profileButtonText:{color:green,fontSize:13,fontWeight:"700"},settingAction:{alignSelf:"flex-start",backgroundColor:"#E7F6EE",borderRadius:9,paddingHorizontal:12,paddingVertical:9,marginTop:10},settingText:{fontSize:13,color:"#344054"},sensitivity:{flexDirection:"row",gap:6,marginTop:10},sensitivityItem:{flex:1,textAlign:"center",padding:8,borderRadius:8,backgroundColor:"#EAECF0",color:"#475467",fontSize:12,fontWeight:"700"},sensitivityActive:{backgroundColor:green,color:"#fff"},backButton:{flexDirection:"row",alignItems:"center",gap:5},backText:{fontSize:32,lineHeight:32,color:"#667085"},backLabel:{fontSize:20,fontWeight:"800",color:"#101828"},closeText:{color:green,fontWeight:"700"},profileCard:{flexDirection:"row",alignItems:"center",gap:12},avatar:{width:52,height:52,borderRadius:16,backgroundColor:"#E7F6EE",alignItems:"center",justifyContent:"center"},avatarText:{color:green,fontSize:20,fontWeight:"800"},profileName:{fontSize:17,fontWeight:"800",color:"#101828"},editButton:{borderWidth:1.5,borderColor:green,borderRadius:8,paddingHorizontal:12,paddingVertical:6},contactRow:{flexDirection:"row",alignItems:"center",gap:10,paddingVertical:10,borderTopWidth:1,borderTopColor:"#EAECF0"},contactAvatar:{width:36,height:36,borderRadius:10,backgroundColor:"#E7F6EE",alignItems:"center",justifyContent:"center"},contactName:{fontSize:14,fontWeight:"800",color:"#101828"},relation:{backgroundColor:"#E7F6EE",color:green,fontSize:10,paddingHorizontal:6,paddingVertical:2,borderRadius:4},chevron:{fontSize:22,color:"#98A2B3"},addContact:{alignItems:"center",paddingTop:10,borderTopWidth:1,borderTopColor:"#EAECF0"},logoutButton:{borderWidth:1.5,borderColor:"#FECACA",borderRadius:14,padding:14,alignItems:"center"},logoutText:{color:"#DF5A55",fontSize:14,fontWeight:"800"},backdrop:{flex:1,justifyContent:"flex-end",backgroundColor:"rgba(16,24,40,0.42)"},sheet:{backgroundColor:"#fff",borderTopLeftRadius:28,borderTopRightRadius:28,padding:20,gap:15},handle:{alignSelf:"center",width:42,height:5,backgroundColor:"#D0D5DD",borderRadius:3},sheetTitle:{fontSize:20,fontWeight:"800",color:"#101828"},hero:{alignItems:"center",borderRadius:18,padding:19,gap:7},heroTitle:{fontSize:21,fontWeight:"800"},dangerHero:{alignItems:"center",gap:8,padding:10},dangerTitle:{fontSize:25,fontWeight:"800",color:"#DF5A55"} });
