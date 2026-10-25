@@ -345,8 +345,8 @@ export const themeFlags = {
   alertIconColor: pick<string | undefined>(undefined, '#FFFFFF'),
   /** 로그인 슬로건 자간 */
   sloganLetterSpacing: pick(0, 1.4),
-  /** 홈 헤더 프로필 버튼을 헤더 오른쪽 끝(카드와 같은 16px 여백)에 둔다. figma는 제목 바로 옆 */
-  homeProfileAtEdge: pick(false, true),
+  /** 홈 헤더 프로필 버튼을 헤더 오른쪽 끝(카드와 같은 16px 여백)에 둔다. 두 테마 공통(구조 변경) */
+  homeProfileAtEdge: pick(true, true),
 };
 
 export const fontSize = {
