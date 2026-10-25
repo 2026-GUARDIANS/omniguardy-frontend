@@ -8,7 +8,7 @@ import { colors, fontSize, fonts, radius } from '../theme/tokens';
 export function ExampleTag() {
   if (!USE_MOCK) return null;
   return (
-    <View style={styles.tag} accessible accessibilityLabel="예시 데이터">
+    <View style={[styles.tag, colors.exampleTagBorder !== "transparent" && styles.tagBorder]} accessible accessibilityLabel="예시 데이터">
       <Text style={styles.text}>예시</Text>
     </View>
   );
@@ -19,7 +19,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: radius.pill,
-    backgroundColor: colors.parchment,
+    backgroundColor: colors.exampleTagBg,
   },
-  text: { fontFamily: fonts.monoMedium, fontSize: fontSize.xxs, color: colors.onParchment },
+  // custom 테마: 페이지 배경과 구분되도록 테두리("figma"에서는 적용하지 않아 크기 변화 없음)
+  tagBorder: { borderWidth: 1, borderColor: colors.exampleTagBorder },
+  text: { fontFamily: fonts.monoKoMedium, fontSize: fontSize.xxs, color: colors.onParchment },
 });

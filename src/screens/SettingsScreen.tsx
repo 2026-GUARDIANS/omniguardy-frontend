@@ -8,12 +8,13 @@ import { ExampleTag } from '../components/ExampleTag';
 import { Icon } from '../components/icons/Icon';
 import { LabeledToggle } from '../components/LabeledToggle';
 import { LoadState } from '../components/LoadState';
+import { MixedText } from '../components/MixedText';
 import { RiskBadge } from '../components/Risk';
 import { useApiData } from '../hooks/useApiData';
 import type { TabScreenProps } from '../navigation/types';
 import { useAuth } from '../state/AuthContext';
 import { useRealtimeAlert } from '../state/RealtimeAlertContext';
-import { colors, fontSize, fonts, radius, shadow } from '../theme/tokens';
+import { colors, fontSize, fonts, radius, shadow, themeFlags } from '../theme/tokens';
 import { type } from '../theme/typography';
 
 const REALTIME_LABEL: Record<RealtimeStatus, string> = {
@@ -72,7 +73,7 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
         >
           <View style={styles.profileLeft}>
             <View style={styles.profileIcon}>
-              <Icon name="user18" />
+              <Icon name="user18" color={themeFlags.iconTint} />
             </View>
             <Text style={styles.profileText}>프로필</Text>
           </View>
@@ -129,7 +130,9 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
               </View>
             </View>
             <View style={styles.deviceRow}>
-              <Text style={[type.body, styles.flexShrink]}>실시간 알림 연결 (WebSocket)</Text>
+              <MixedText style={[type.body, styles.flexShrink]} weight="regular">
+                실시간 알림 연결 (WebSocket)
+              </MixedText>
               <StatusDot label={REALTIME_LABEL[realtimeStatus]} ok={realtimeStatus === 'connected'} />
             </View>
           </View>
@@ -142,7 +145,7 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
 function StatusDot({ label, ok }: { label: string; ok: boolean }) {
   return (
     <View style={styles.statusDotRow}>
-      <View style={[styles.dot, { backgroundColor: ok ? colors.primary : colors.textMuted }]} />
+      <View style={[styles.dot, { backgroundColor: ok ? colors.ok : colors.textMuted }]} />
       <Text style={styles.statusText}>{label}</Text>
     </View>
   );
@@ -156,7 +159,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.displayLg,
     lineHeight: 37.4,
     letterSpacing: -1.02,
-    color: colors.textSecondary,
+    color: colors.settingsTitle,
   },
   content: { paddingHorizontal: 16, paddingBottom: TAB_BAR_SPACE, gap: 20 },
   flexShrink: { flexShrink: 1 },
@@ -210,7 +213,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderParchmentSoft,
   },
-  fixedText: { fontFamily: fonts.monoRegular, fontSize: fontSize.xs, color: colors.onParchment },
+  fixedText: { fontFamily: fonts.monoKoRegular, fontSize: fontSize.xs, color: colors.onParchment },
 
   deviceRow: {
     flexDirection: 'row',
@@ -222,6 +225,6 @@ const styles = StyleSheet.create({
   statusWrap: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   statusDotRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dot: { width: 7, height: 7, borderRadius: 4 },
-  statusText: { fontFamily: fonts.monoRegular, fontSize: fontSize.xs, color: colors.textMuted },
+  statusText: { fontFamily: fonts.monoKoRegular, fontSize: fontSize.xs, color: colors.textMuted },
   error: { fontFamily: fonts.sansRegular, fontSize: fontSize.xs, color: colors.danger, paddingHorizontal: 4 },
 });

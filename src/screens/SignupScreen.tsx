@@ -56,7 +56,7 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
           backLabel="로그인으로 돌아가기"
           onBack={() => navigation.goBack()}
           buttonSize={size.iconButton}
-          titleColor={colors.textMuted}
+          titleColor={colors.headerTitleSignup}
           titleSize={20}
         />
         <ScrollView style={styles.flex} contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">

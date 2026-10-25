@@ -9,7 +9,7 @@ type Props = TextInputProps & {
   error?: string | null;
 };
 
-/** 라벨 + 입력창. Figma 로그인 화면 Input 스타일(테두리 #DBE3E9 + 그림자)을 회원가입에도 쓴다. */
+/** 라벨 + 입력창. Figma 로그인 화면 Input 스타일(테두리 + 그림자)을 회원가입에도 쓴다. 테두리 색은 colors.inputBorder */
 export const TextField = forwardRef<TextInput, Props>(function TextField({ label, error, style, ...rest }, ref) {
   const id = useId();
   return (
@@ -41,9 +41,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: radius.input,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.inputBorder,
     backgroundColor: colors.surface,
-    fontFamily: fonts.monoRegular,
+    fontFamily: fonts.monoKoRegular,
     fontSize: fontSize.md,
     color: colors.textStrong,
     ...shadow.input,

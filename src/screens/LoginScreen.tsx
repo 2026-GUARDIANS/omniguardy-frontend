@@ -17,7 +17,7 @@ import { TextField } from '../components/TextField';
 import { Wordmark } from '../components/Wordmark';
 import type { RootScreenProps } from '../navigation/types';
 import { useAuth } from '../state/AuthContext';
-import { colors, fontSize, fonts, size } from '../theme/tokens';
+import { colors, fontSize, fonts, size, THEME, themeFlags } from '../theme/tokens';
 
 const logo = require('../../assets/figma/logo-mark.png');
 
@@ -109,11 +109,17 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24, gap: 40 },
   header: { alignItems: 'center', gap: 10 },
   logo: { width: 100, height: 97, marginBottom: 6 },
-  tagline: { fontFamily: fonts.sansRegular, fontSize: fontSize.md, color: colors.textSecondary },
+  // 슬로건: 'custom'은 영문 글꼴 + 넓은 자간(대문자 문구는 원래 대문자)
+  tagline: {
+    fontFamily: THEME === 'custom' ? fonts.latinRegular : fonts.sansRegular,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    ...(themeFlags.sloganLetterSpacing ? { letterSpacing: themeFlags.sloganLetterSpacing } : null),
+  },
   form: { gap: 16 },
   buttonWrap: { paddingTop: 8, minHeight: 64 },
   footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   footerText: { fontFamily: fonts.sansRegular, fontSize: fontSize.md, color: colors.textSecondary },
   footerLink: { minHeight: size.minTouch, justifyContent: 'center', paddingHorizontal: 4 },
-  footerLinkText: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.md, color: colors.primary },
+  footerLinkText: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.md, color: colors.link },
 });

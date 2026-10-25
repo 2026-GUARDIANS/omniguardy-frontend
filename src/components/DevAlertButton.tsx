@@ -29,5 +29,5 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: colors.textMuted,
   },
-  text: { fontFamily: fonts.monoMedium, fontSize: fontSize.sm, color: colors.textSecondary },
+  text: { fontFamily: fonts.monoKoMedium, fontSize: fontSize.sm, color: colors.textSecondary },
 });

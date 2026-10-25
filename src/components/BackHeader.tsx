@@ -21,7 +21,7 @@ export function BackHeader({
   onBack,
   backLabel,
   buttonSize = size.backButton,
-  titleColor = colors.textSecondary,
+  titleColor = colors.headerTitle,
   titleSize = fontSize.h3,
 }: Props) {
   return (

@@ -10,7 +10,7 @@ import { useApiData } from '../hooks/useApiData';
 import { formatDayLabel } from '../lib/format';
 import type { TabScreenProps } from '../navigation/types';
 import { useRealtimeAlert } from '../state/RealtimeAlertContext';
-import { colors, fontSize, fonts, hitSlopFor, radius, riskColors } from '../theme/tokens';
+import { colors, fontSize, fonts, hitSlopFor, radius, riskColors, shadow, themeFlags } from '../theme/tokens';
 import { type } from '../theme/typography';
 
 type Filter = 'ALL' | RiskLevel;
@@ -134,9 +134,9 @@ const styles = StyleSheet.create({
   chipIdle: { backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border },
   chipSelected: { backgroundColor: colors.primary, borderWidth: 1, borderColor: colors.primary },
   chipDot: { width: 8, height: 8, borderRadius: 4 },
-  chipAllText: { fontFamily: fonts.sansBold, fontSize: fontSize.sm, color: colors.textSecondary },
-  // Figma 원본 rgba(31,31,31,0.32) → 조정 #6B7280 (대비 2.0:1 → 4.7:1)
-  chipRiskText: { fontFamily: fonts.monoMedium, fontSize: fontSize.xs, color: colors.textSecondary },
+  chipAllText: { fontFamily: fonts.sansBold, fontSize: fontSize.sm, color: colors.chipText },
+  // figma: 원본 rgba(31,31,31,0.32) → 조정 #6B7280 (대비 2.0:1 → 4.7:1) / custom: text-primary
+  chipRiskText: { fontFamily: fonts.monoMedium, fontSize: fontSize.xs, color: colors.chipText },
   chipTextSelected: { color: colors.textOnPrimary },
   list: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: TAB_BAR_SPACE },
   gap: { height: 12 },
@@ -145,14 +145,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: colors.parchment,
-    transform: [{ rotate: '-1.5deg' }],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 1,
+    backgroundColor: colors.dateTagBg,
+    transform: [{ rotate: themeFlags.dateTagRotate }],
+    ...shadow.dateTag,
   },
-  // Figma 원본 #A5A696 → 조정 onParchment (대비 1.9:1 → 5.3:1)
-  dateText: { fontFamily: fonts.monoSemiBold, fontSize: fontSize.xs, color: colors.onParchment },
+  // figma: 원본 #A5A696 → 조정 onParchment (대비 1.9:1 → 5.3:1) / custom: text-secondary on bg (5.20:1)
+  dateText: { fontFamily: fonts.monoKoSemiBold, fontSize: fontSize.xs, color: colors.dateTagText },
 });

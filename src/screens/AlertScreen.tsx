@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api } from '../api';
 import { Icon } from '../components/icons/Icon';
 import { LoadState } from '../components/LoadState';
+import { MixedText } from '../components/MixedText';
 import { PillButton } from '../components/PillButton';
 import { useApiData } from '../hooks/useApiData';
 import { formatTime } from '../lib/format';
 import type { RootScreenProps } from '../navigation/types';
 import { useRealtimeAlert } from '../state/RealtimeAlertContext';
-import { colors, fontSize, fonts, radius, shadow } from '../theme/tokens';
+import { colors, fontSize, fonts, radius, shadow, THEME, themeFlags } from '../theme/tokens';
 
 // Figma 1:399 사일런트 시그널 알림 화면 (HIGH 위험 알림)
 export function AlertScreen({ navigation, route }: RootScreenProps<'Alert'>) {
@@ -39,13 +41,19 @@ export function AlertScreen({ navigation, route }: RootScreenProps<'Alert'>) {
   return (
     <SafeAreaView style={styles.safe}>
       {/* 장식: 동심원 */}
-      <View pointerEvents="none" style={styles.rings} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Icon name="alertRings" />
-      </View>
+      {/* custom 테마: 어두운 배경이라 상태 표시줄 글자를 밝게 */}
+      {THEME === 'custom' ? <StatusBar style="light" /> : null}
+      {themeFlags.alertRings ? (
+        <View pointerEvents="none" style={styles.rings} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <Icon name="alertRings" />
+        </View>
+      ) : null}
 
       <View style={styles.top}>
         <View style={styles.tag}>
-          <Text style={styles.tagText}>HIGH · 위험 알림</Text>
+          <MixedText style={styles.tagText} weight="semibold">
+            HIGH · 위험 알림
+          </MixedText>
         </View>
       </View>
 
@@ -53,15 +61,15 @@ export function AlertScreen({ navigation, route }: RootScreenProps<'Alert'>) {
         {event ? (
           <>
             <View style={styles.iconCircle}>
-              <Icon name="alertWarning" />
+              <Icon name="alertWarning" color={themeFlags.alertIconColor} />
             </View>
             <Text accessibilityRole="header" accessibilityLiveRegion="assertive" style={styles.headline}>
               {`${event.title}이\n감지되었습니다`}
             </Text>
             <View style={styles.divider} />
-            <Text style={styles.meta}>{formatTime(event.occurredAt)} · 현관</Text>
+            <MixedText style={styles.meta} weight="medium">{`${formatTime(event.occurredAt)} · 현관`}</MixedText>
             <View style={[styles.warnPill, !warning && styles.warnPillOff]} accessibilityLiveRegion="polite">
-              <Icon name="speaker" color={warning ? undefined : colors.onParchment} />
+              <Icon name="speaker" color={warning ? undefined : colors.warnPillOffText} />
               <Text style={[styles.warnText, !warning && styles.warnTextOff]}>
                 {warning ? '경고 출력 중' : '경고 꺼짐'}
               </Text>
@@ -81,6 +89,7 @@ export function AlertScreen({ navigation, route }: RootScreenProps<'Alert'>) {
         <PillButton
           label="상세 보기"
           trailingIcon="arrowRight"
+          outlineColor={colors.alertDetailBorder}
           labelSize={fontSize.xxl}
           disabled={!event}
           onPress={() => navigation.replace('EventDetail', { eventId })}
@@ -92,10 +101,10 @@ export function AlertScreen({ navigation, route }: RootScreenProps<'Alert'>) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 24, overflow: 'hidden' },
+  safe: { flex: 1, backgroundColor: colors.alertBg, paddingHorizontal: 24, overflow: 'hidden' },
   rings: { position: 'absolute', top: 40, right: -210 },
   top: { paddingTop: 24, flexDirection: 'row' },
-  tag: { backgroundColor: colors.overlayStrong, paddingHorizontal: 12, paddingTop: 6, paddingBottom: 7, borderRadius: radius.pill },
+  tag: { backgroundColor: colors.alertTagBg, paddingHorizontal: 12, paddingTop: 6, paddingBottom: 7, borderRadius: radius.pill },
   tagText: { fontFamily: fonts.monoSemiBold, fontSize: fontSize.sm, color: colors.textOnPrimary },
 
   middle: { flex: 1, justifyContent: 'center', alignItems: 'flex-start' },
@@ -103,15 +112,15 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.alertIconCircle,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 32,
     ...shadow.cardLg,
   },
-  headline: { fontFamily: fonts.sansBold, fontSize: fontSize.hero, lineHeight: 44, color: colors.textInfoTitle },
-  divider: { width: 56, height: 2, backgroundColor: colors.parchment, marginTop: 24, marginBottom: 24 },
-  meta: { fontFamily: fonts.monoMedium, fontSize: fontSize.xl, color: colors.textSecondary, paddingHorizontal: 16 },
+  headline: { fontFamily: fonts.sansBold, fontSize: fontSize.hero, lineHeight: 44, color: colors.alertHeadline },
+  divider: { width: 56, height: 2, backgroundColor: colors.alertDivider, marginTop: 24, marginBottom: 24 },
+  meta: { fontFamily: fonts.monoMedium, fontSize: fontSize.xl, color: colors.alertMeta, paddingHorizontal: 16 },
   warnPill: {
     marginTop: 24,
     flexDirection: 'row',
@@ -121,12 +130,12 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     paddingVertical: 10,
     borderRadius: radius.pill,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.warnPill,
   },
-  warnPillOff: { backgroundColor: colors.parchment },
+  warnPillOff: { backgroundColor: colors.warnPillOffBg },
   warnText: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.md, color: colors.textOnPrimary },
-  warnTextOff: { color: colors.onParchment },
+  warnTextOff: { color: colors.warnPillOffText },
 
   actions: { paddingTop: 12, paddingBottom: 36, gap: 10 },
-  error: { fontFamily: fonts.sansRegular, fontSize: fontSize.xs, color: colors.danger, textAlign: 'center' },
+  error: { fontFamily: fonts.sansRegular, fontSize: fontSize.xs, color: colors.alertError, textAlign: 'center' },
 });

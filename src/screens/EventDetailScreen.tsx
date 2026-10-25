@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../api';
 import { BackHeader } from '../components/BackHeader';
 import { LoadState } from '../components/LoadState';
+import { MixedText } from '../components/MixedText';
 import { PillButton } from '../components/PillButton';
 import { RiskBadge } from '../components/Risk';
 import { VideoClipArea } from '../components/VideoClipArea';
@@ -62,9 +63,9 @@ export function EventDetailScreen({ navigation, route }: RootScreenProps<'EventD
               {/* 장식: 마스킹 테이프 */}
               <View style={styles.tape} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
               <View style={styles.agentHeader}>
-                <Text accessibilityRole="header" style={styles.agentTitle}>
+                <MixedText accessibilityRole="header" style={styles.agentTitle} weight="bold">
                   Agent 위험도 판단
-                </Text>
+                </MixedText>
               </View>
               <View style={[styles.agentRow, styles.dashed]}>
                 <Text style={styles.agentLabel}>위험도</Text>
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.56,
     color: colors.textInfoTitle,
   },
-  meta: { fontFamily: fonts.monoRegular, fontSize: fontSize.xs, color: colors.textMuted },
+  meta: { fontFamily: fonts.monoKoRegular, fontSize: fontSize.xs, color: colors.textMuted },
 
   agentCard: {
     marginTop: 8,
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
     width: 88,
     height: 20,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(242,232,213,0.28)',
+    backgroundColor: colors.tape,
     transform: [{ rotate: '2deg' }],
   },
   agentHeader: { paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
   agentReason: {
     flexShrink: 1,
     textAlign: 'right',
-    fontFamily: fonts.monoMedium,
+    fontFamily: fonts.monoKoMedium,
     fontSize: fontSize.sm,
     color: colors.textMuted,
   },

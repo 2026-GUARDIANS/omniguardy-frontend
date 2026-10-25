@@ -17,7 +17,11 @@ export function RiskBadge({ risk, compact = false, large = false }: { risk: Risk
         { backgroundColor: riskColors[risk].badge },
       ]}
     >
-      <Text style={[styles.badgeText, large && styles.largeText]}>{risk}</Text>
+      <Text style={[styles.badgeText, large && styles.largeText, { color: riskColors[risk].badgeText }]}>{risk}</Text>
+      {/* 1px 테두리를 겹쳐 그린다(레이아웃에 참여하지 않아 배지 크기는 그대로). 'custom' MEDIUM/LOW만 */}
+      {riskColors[risk].badgeBorder ? (
+        <View pointerEvents="none" style={[styles.badgeBorder, { borderColor: riskColors[risk].badgeBorder }]} />
+      ) : null}
     </View>
   );
 }
@@ -36,8 +40,9 @@ const styles = StyleSheet.create({
   badge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: radius.pill, alignSelf: 'flex-start' },
   compact: { paddingHorizontal: 10, paddingVertical: 4 },
   large: { paddingVertical: 7 },
-  badgeText: { fontFamily: fonts.monoSemiBold, fontSize: fontSize.xxs, color: colors.textOnPrimary },
+  badgeText: { fontFamily: fonts.monoSemiBold, fontSize: fontSize.xxs },
   largeText: { fontSize: fontSize.xs },
+  badgeBorder: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderRadius: radius.pill, borderWidth: 1 },
   dot: { width: 10, height: 10, borderRadius: 5 },
   // Figma: 0 0 0 4px rgba(0,0,0,0.08) 링
   halo: {
@@ -45,7 +50,7 @@ const styles = StyleSheet.create({
     height: 18,
     margin: -4,
     borderRadius: 9,
-    backgroundColor: 'rgba(0,0,0,0.08)',
+    backgroundColor: colors.riskHalo,
     alignItems: 'center',
     justifyContent: 'center',
   },

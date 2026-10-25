@@ -10,12 +10,13 @@ import { ExampleTag } from '../components/ExampleTag';
 import { Icon } from '../components/icons/Icon';
 import type { FigmaIconName } from '../components/icons/figmaSvgs';
 import { LoadState } from '../components/LoadState';
+import { MixedText } from '../components/MixedText';
 import { RiskBadge, RiskDot } from '../components/Risk';
 import { useApiData } from '../hooks/useApiData';
 import { daysAgo, formatDateTime, formatTime } from '../lib/format';
 import type { TabScreenProps } from '../navigation/types';
 import { useRealtimeAlert } from '../state/RealtimeAlertContext';
-import { colors, fontSize, fonts, hitSlopFor, radius, riskColors, shadow, size } from '../theme/tokens';
+import { colors, fontSize, fonts, hitSlopFor, radius, riskColors, shadow, size, spacing, themeFlags } from '../theme/tokens';
 import { type } from '../theme/typography';
 
 const DEVICES: Record<DeviceKind, { label: string; icon: FigmaIconName }> = {
@@ -39,8 +40,8 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <Text accessibilityRole="header" style={type.pageTitleDecorative}>
+      <View style={[styles.header, themeFlags.homeProfileAtEdge && styles.headerSpread]}>
+        <Text accessibilityRole="header" style={type.homeTitle}>
           OmniGuardy
         </Text>
         <Pressable
@@ -88,7 +89,9 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
           >
             <RiskDot risk="HIGH" />
             <View style={styles.alertBody}>
-              <Text style={styles.alertCaption}>HIGH · 위험 알림</Text>
+              <MixedText style={styles.alertCaption} weight="semibold">
+                HIGH · 위험 알림
+              </MixedText>
               <Text style={styles.alertTitle}>{activeAlert.title}이 감지되었습니다</Text>
               <Text style={styles.alertHint}>탭하여 알림 화면 보기 →</Text>
             </View>
@@ -114,7 +117,7 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
                   accessible
                   accessibilityLabel={`${DEVICES[d.kind].label} ${d.connected ? '연결됨' : '연결 끊김'}`}
                 >
-                  <Icon name={DEVICES[d.kind].icon} />
+                  <Icon name={DEVICES[d.kind].icon} color={themeFlags.iconTint} />
                   <Text style={styles.tileLabel}>{DEVICES[d.kind].label}</Text>
                   <View style={styles.tileStatus}>
                     <View style={[styles.tileDot, !d.connected && { backgroundColor: colors.textMuted }]} />
@@ -172,6 +175,8 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     paddingHorizontal: 20,
   },
+  // custom: 제목은 왼쪽, 프로필 버튼은 오른쪽 끝. 오른쪽 여백은 아래 카드들과 같은 16
+  headerSpread: { justifyContent: 'space-between', paddingRight: spacing.xxl },
   profileBtn: {
     width: size.iconButton,
     height: size.iconButton,
@@ -184,27 +189,27 @@ const styles = StyleSheet.create({
   between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 
   statusCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.statusCardBg,
     borderWidth: 1,
-    borderColor: colors.borderSoft,
+    borderColor: colors.statusCardBorder,
     borderRadius: radius.card,
     padding: 18,
     gap: 10,
     ...shadow.cardLg,
   },
-  statusCaption: { fontFamily: fonts.monoRegular, fontSize: fontSize.xxs, color: colors.primary },
+  statusCaption: { fontFamily: fonts.monoKoRegular, fontSize: fontSize.xxs, color: colors.statusCaption },
   statusIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.statusIconBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statusText: { fontFamily: fonts.sansBold, fontSize: fontSize.display, lineHeight: 36, color: colors.textStrong },
-  divider: { height: 1, backgroundColor: colors.border },
-  statusMeta: { fontFamily: fonts.sansRegular, fontSize: fontSize.sm, color: colors.primary },
-  statusMetaValue: { fontFamily: fonts.monoRegular, color: colors.textSecondary },
+  statusText: { fontFamily: fonts.sansBold, fontSize: fontSize.display, lineHeight: 36, color: colors.statusText },
+  divider: { height: 1, backgroundColor: colors.statusDivider },
+  statusMeta: { fontFamily: fonts.sansRegular, fontSize: fontSize.sm, color: colors.statusMeta },
+  statusMetaValue: { fontFamily: fonts.monoRegular, color: colors.statusMetaValue },
 
   alertCard: {
     flexDirection: 'row',
@@ -218,10 +223,10 @@ const styles = StyleSheet.create({
     ...shadow.cardMd,
   },
   alertBody: { flex: 1, gap: 3 },
-  // Figma 원본 rgba(144,19,24,0.5) → 조정 #901318 (대비 2.6:1 → 9.2:1)
+  // figma: 원본 rgba(144,19,24,0.5) → 조정 #901318 (대비 2.6:1 → 9.2:1) / custom: HIGH #C0392B (5.44:1)
   alertCaption: { fontFamily: fonts.monoSemiBold, fontSize: fontSize.xxs, color: riskColors.HIGH.dot },
   alertTitle: { fontFamily: fonts.sansBold, fontSize: fontSize.lg, color: colors.textTitle },
-  alertHint: { fontFamily: fonts.sansRegular, fontSize: fontSize.sm, color: colors.primary },
+  alertHint: { fontFamily: fonts.sansRegular, fontSize: fontSize.sm, color: colors.link },
 
   section: { gap: 10 },
   sectionRecent: { gap: 6 },
@@ -239,8 +244,8 @@ const styles = StyleSheet.create({
   },
   tileLabel: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.sm, color: colors.textStrong },
   tileStatus: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  tileDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary },
-  tileStatusText: { fontFamily: fonts.monoRegular, fontSize: fontSize.xxs, color: colors.primary },
+  tileDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.ok },
+  tileStatusText: { fontFamily: fonts.monoKoRegular, fontSize: fontSize.xxs, color: colors.deviceStatusText },
   moreLink: { minHeight: size.minTouch, justifyContent: 'center', paddingLeft: 8 },
   recentList: { gap: 8 },
 });

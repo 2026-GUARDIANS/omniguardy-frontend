@@ -1,10 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontSize, fonts, radius, shadow } from '../theme/tokens';
+import { colors, fontSize, fonts, radius, shadow, themeFlags } from '../theme/tokens';
 import { Icon } from './icons/Icon';
-
-const BRACKET_COLOR = '#A5A696'; // 모서리 브래킷은 장식이라 Figma 원본 색 유지
 
 /**
  * 이벤트 영상 클립 영역 (Figma 1:502).
@@ -22,7 +20,7 @@ export function VideoClipArea({ videoUrl }: { videoUrl: string | null }) {
       {(['tl', 'tr', 'bl', 'br'] as const).map((c) => (
         <View key={c} style={[styles.bracket, styles[c]]} />
       ))}
-      <Icon name="eye" />
+      <Icon name="eye" color={themeFlags.iconTint} />
       <Text style={styles.text}>{hasClip ? '영상 클립 (플레이어 연결 예정)' : '이 이벤트에는 영상 클립이 없습니다'}</Text>
     </View>
   );
@@ -42,7 +40,7 @@ const styles = StyleSheet.create({
     ...shadow.card,
   },
   text: { fontFamily: fonts.sansRegular, fontSize: fontSize.sm, color: colors.textSecondary },
-  bracket: { position: 'absolute', width: 20, height: 20, borderColor: BRACKET_COLOR },
+  bracket: { position: 'absolute', width: 20, height: 20, borderColor: colors.bracket },
   tl: { top: 16, left: 16, borderTopWidth: B, borderLeftWidth: B },
   tr: { top: 16, right: 16, borderTopWidth: B, borderRightWidth: B },
   bl: { bottom: 16, left: 16, borderBottomWidth: B, borderLeftWidth: B },

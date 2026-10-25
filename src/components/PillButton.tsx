@@ -8,7 +8,7 @@ import type { FigmaIconName } from './icons/figmaSvgs';
 type Props = {
   label: string;
   onPress: () => void;
-  /** primary: 세이지 채움(로그인/가입하기/상세 보기/확인 완료), secondary: 양피지(경고 끄기) */
+  /** primary: colors.primary 채움(로그인/가입하기/상세 보기/확인 완료), secondary: colors.buttonSecondaryBg(경고 끄기) */
   variant?: 'primary' | 'secondary';
   trailingIcon?: FigmaIconName;
   loading?: boolean;
@@ -17,6 +17,8 @@ type Props = {
   elevated?: boolean;
   /** Figma 기본 16, 알림 화면 "상세 보기"만 17 */
   labelSize?: number;
+  /** 테두리 색(1.5px). "transparent"나 미지정이면 테두리 없음 */
+  outlineColor?: string;
   style?: StyleProp<ViewStyle>;
   accessibilityHint?: string;
 };
@@ -30,6 +32,7 @@ export function PillButton({
   disabled = false,
   elevated = true,
   labelSize,
+  outlineColor,
   style,
   accessibilityHint,
 }: Props) {
@@ -47,12 +50,13 @@ export function PillButton({
         styles.base,
         primary ? styles.primary : styles.secondary,
         primary && elevated && shadow.button,
+        outlineColor && outlineColor !== "transparent" ? { borderWidth: 1.5, borderColor: outlineColor } : null,
         (pressed || inactive) && { opacity: inactive ? 0.6 : 0.85 },
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={primary ? colors.textOnPrimary : colors.onParchment} />
+        <ActivityIndicator color={primary ? colors.textOnPrimary : colors.onButtonSecondary} />
       ) : (
         <View style={styles.row}>
           <Text style={[primary ? styles.primaryText : styles.secondaryText, labelSize ? { fontSize: labelSize } : null]}>
@@ -72,10 +76,10 @@ const styles = StyleSheet.create({
   secondary: {
     minHeight: size.buttonSecondary,
     paddingVertical: 18,
-    backgroundColor: colors.parchment,
+    backgroundColor: colors.buttonSecondaryBg,
     borderWidth: 1,
     borderColor: colors.surface,
   },
   primaryText: { fontFamily: fonts.sansBold, fontSize: fontSize.xl, color: colors.textOnPrimary },
-  secondaryText: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.xl, color: colors.onParchment },
+  secondaryText: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.xl, color: colors.onButtonSecondary },
 });

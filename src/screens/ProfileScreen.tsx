@@ -11,7 +11,7 @@ import { useApiData } from '../hooks/useApiData';
 import { TAB_TO_ROUTE } from '../navigation/tabs';
 import type { RootScreenProps } from '../navigation/types';
 import { useAuth } from '../state/AuthContext';
-import { colors, fontSize, fonts, radius } from '../theme/tokens';
+import { colors, fontSize, fonts, radius, shadow, themeFlags } from '../theme/tokens';
 
 // Figma 1:658 마이페이지(프로필). 하단 탭은 "설정"이 활성(Figma 기준).
 export function ProfileScreen({ navigation }: RootScreenProps<'Profile'>) {
@@ -36,7 +36,7 @@ export function ProfileScreen({ navigation }: RootScreenProps<'Profile'>) {
         <BackHeader
           title="프로필"
           backLabel="이전 화면으로 돌아가기"
-          titleColor={colors.primary}
+          titleColor={colors.headerTitleProfile}
           onBack={() => navigation.goBack()}
         />
       </View>
@@ -44,7 +44,7 @@ export function ProfileScreen({ navigation }: RootScreenProps<'Profile'>) {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.identity}>
           <View style={styles.avatar}>
-            <Icon name="user40" />
+            <Icon name="user40" color={themeFlags.iconTint} />
           </View>
           <Text accessibilityRole="header" style={styles.name}>
             {user?.name ?? '—'}
@@ -66,7 +66,7 @@ export function ProfileScreen({ navigation }: RootScreenProps<'Profile'>) {
             style={({ pressed }) => [styles.linkRow, styles.divider, pressed && styles.pressed]}
           >
             <Text style={styles.label}>비밀번호 변경</Text>
-            <Icon name="chevronRight" />
+            <Icon name="chevronRight" color={themeFlags.iconTint} />
           </Pressable>
           <Pressable
             accessibilityRole="button"
@@ -108,18 +108,14 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 48,
     borderWidth: 2,
-    borderColor: colors.parchment,
+    borderColor: colors.avatarBorder,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
+    ...shadow.avatar,
   },
-  // Figma 원본 #A5A696 → 조정 primary (대비 2.4:1 → 4.8:1)
-  name: { fontFamily: fonts.sansBold, fontSize: fontSize.h2, letterSpacing: -0.48, color: colors.primary },
+  // figma: 원본 #A5A696 → 조정 primary (대비 2.4:1 → 4.8:1) / custom: brown-600 (6.19:1)
+  name: { fontFamily: fonts.sansBold, fontSize: fontSize.h2, letterSpacing: -0.48, color: colors.profileName },
 
   card: {
     backgroundColor: colors.surface,

@@ -31,6 +31,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
@@ -41,5 +42,6 @@ yarn-error.*
 /android
 
 .claude/
-# expo export output
-dist/
+
+# 디자인 참고 이미지(Figma 내보내기, 저장소에 포함하지 않음)
+assets/figma-v2/
