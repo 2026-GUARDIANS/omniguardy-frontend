@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -35,22 +35,20 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
   const { status: realtimeStatus } = useRealtimeAlert();
   const remote = useApiData(() => api.settings.getResponseSettings());
   const devices = useApiData(() => api.devices.getStatuses());
-  const [settings, setSettings] = useState<ResponseSettings | null>(null);
+  // 사용자가 바꾼 값(저장 응답 포함)이 있으면 그것을, 없으면 서버에서 불러온 값을 쓴다.
+  const [local, setLocal] = useState<ResponseSettings | null>(null);
+  const settings = local ?? remote.data;
   const [saveError, setSaveError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (remote.data) setSettings(remote.data);
-  }, [remote.data]);
 
   const toggle = async (key: ToggleKey, next: boolean) => {
     if (!settings) return;
     const prev = settings;
-    setSettings({ ...settings, [key]: next }); // 낙관적 업데이트
+    setLocal({ ...settings, [key]: next }); // 낙관적 업데이트
     setSaveError(null);
     try {
-      setSettings(await api.settings.updateResponseSettings({ [key]: next }));
+      setLocal(await api.settings.updateResponseSettings({ [key]: next }));
     } catch (e) {
-      setSettings(prev);
+      setLocal(prev);
       setSaveError(e instanceof Error ? e.message : '설정을 저장하지 못했습니다.');
     }
   };

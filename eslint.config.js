@@ -7,4 +7,12 @@ module.exports = defineConfig([
   {
     ignores: ['dist/*', 'assets/*'],
   },
+  {
+    // Node로 실행하는 개발용 스크립트
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { __dirname: 'readonly', require: 'readonly', module: 'writable', process: 'readonly', console: 'readonly' },
+    },
+  },
 ]);

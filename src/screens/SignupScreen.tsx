@@ -29,11 +29,9 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
   const [values, setValues] = useState<Record<Field, string>>({ name: '', email: '', password: '', passwordConfirm: '' });
   const [errors, setErrors] = useState<Errors>({});
   const [loading, setLoading] = useState(false);
-  const refs = {
-    email: useRef<TextInput>(null),
-    password: useRef<TextInput>(null),
-    passwordConfirm: useRef<TextInput>(null),
-  };
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const passwordConfirmRef = useRef<TextInput>(null);
 
   const set = (k: Field) => (text: string) => setValues((v) => ({ ...v, [k]: text }));
 
@@ -69,11 +67,11 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
             autoComplete="name"
             textContentType="name"
             returnKeyType="next"
-            onSubmitEditing={() => refs.email.current?.focus()}
+            onSubmitEditing={() => emailRef.current?.focus()}
             error={errors.name}
           />
           <TextField
-            ref={refs.email}
+            ref={emailRef}
             label="이메일"
             value={values.email}
             onChangeText={set('email')}
@@ -82,11 +80,11 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
             keyboardType="email-address"
             textContentType="emailAddress"
             returnKeyType="next"
-            onSubmitEditing={() => refs.password.current?.focus()}
+            onSubmitEditing={() => passwordRef.current?.focus()}
             error={errors.email}
           />
           <TextField
-            ref={refs.password}
+            ref={passwordRef}
             label="비밀번호"
             value={values.password}
             onChangeText={set('password')}
@@ -94,11 +92,11 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
             autoComplete="new-password"
             textContentType="newPassword"
             returnKeyType="next"
-            onSubmitEditing={() => refs.passwordConfirm.current?.focus()}
+            onSubmitEditing={() => passwordConfirmRef.current?.focus()}
             error={errors.password}
           />
           <TextField
-            ref={refs.passwordConfirm}
+            ref={passwordConfirmRef}
             label="비밀번호 확인"
             value={values.passwordConfirm}
             onChangeText={set('passwordConfirm')}
