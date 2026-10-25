@@ -41,7 +41,7 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={[styles.header, themeFlags.homeProfileAtEdge && styles.headerSpread]}>
-        <Text accessibilityRole="header" style={type.homeTitle}>
+        <Text accessibilityRole="header" style={type.pageTitleDecorative}>
           OmniGuardy
         </Text>
         <Pressable

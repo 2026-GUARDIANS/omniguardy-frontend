@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../api';
 import { BackHeader } from '../components/BackHeader';
 import { BottomTabBar, TAB_BAR_SPACE } from '../components/BottomTabBar';
+import { ExampleTag } from '../components/ExampleTag';
 import { Icon } from '../components/icons/Icon';
 import { LoadState } from '../components/LoadState';
 import { useApiData } from '../hooks/useApiData';
@@ -49,6 +50,8 @@ export function ProfileScreen({ navigation }: RootScreenProps<'Profile'>) {
           <Text accessibilityRole="header" style={styles.name}>
             {user?.name ?? '—'}
           </Text>
+          {/* mock 모드: 계정 정보가 예시 값임을 표시(실제 API 모드에서는 렌더링 안 함) */}
+          <ExampleTag />
         </View>
 
         <LoadState loading={me.loading} error={me.error} onRetry={me.reload} hasData={!!user} />

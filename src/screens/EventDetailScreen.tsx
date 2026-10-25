@@ -13,7 +13,7 @@ import { useApiData } from '../hooks/useApiData';
 import { formatDateTime } from '../lib/format';
 import type { RootScreenProps } from '../navigation/types';
 import { useRealtimeAlert } from '../state/RealtimeAlertContext';
-import { colors, fontSize, fonts, radius, shadow } from '../theme/tokens';
+import { colors, fontSize, fonts, radius, shadow, themeFlags } from '../theme/tokens';
 
 // Figma 1:494 이벤트 기록 상세 화면
 // "처리 이력" 카드와 출처("음성 트리거")는 최소 필드에 없어 숨김(사용자 결정).
@@ -61,22 +61,30 @@ export function EventDetailScreen({ navigation, route }: RootScreenProps<'EventD
 
             <View style={styles.agentCard}>
               {/* 장식: 마스킹 테이프 */}
-              <View style={styles.tape} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
+              {themeFlags.agentCardTape ? (
+                <View style={styles.tape} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
+              ) : null}
               <View style={styles.agentHeader}>
                 <MixedText accessibilityRole="header" style={styles.agentTitle} weight="bold">
                   Agent 위험도 판단
                 </MixedText>
               </View>
               <View style={[styles.agentRow, styles.dashed]}>
-                <Text style={styles.agentLabel}>위험도</Text>
+                <Text style={styles.agentLabel} numberOfLines={1}>
+                  위험도
+                </Text>
                 <RiskBadge risk={event.agentJudgement.risk} compact />
               </View>
               <View style={[styles.agentRow, styles.dashed]}>
-                <Text style={styles.agentLabel}>대응</Text>
+                <Text style={styles.agentLabel} numberOfLines={1}>
+                  대응
+                </Text>
                 <Text style={styles.agentAction}>{event.agentJudgement.action}</Text>
               </View>
               <View style={[styles.agentRow, styles.last]}>
-                <Text style={styles.agentLabel}>판단 근거</Text>
+                <Text style={styles.agentLabel} numberOfLines={1}>
+                  판단 근거
+                </Text>
                 <Text style={styles.agentReason}>{event.agentJudgement.reason}</Text>
               </View>
             </View>
@@ -148,10 +156,11 @@ const styles = StyleSheet.create({
   },
   dashed: { borderBottomWidth: 1, borderBottomColor: colors.border, borderStyle: 'dashed' },
   last: { paddingBottom: 2 },
-  agentLabel: { fontFamily: fonts.sansRegular, fontSize: fontSize.md, color: colors.textSecondary },
+  // 라벨은 줄이지 않는다(긴 판단 근거와 폭을 나눌 때 라벨이 두 줄로 쪼개지던 문제)
+  agentLabel: { flexShrink: 0, fontFamily: fonts.sansRegular, fontSize: fontSize.md, color: colors.textSecondary },
   agentAction: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.md, color: colors.textSecondary },
   agentReason: {
-    flexShrink: 1,
+    flex: 1,
     textAlign: 'right',
     fontFamily: fonts.monoKoMedium,
     fontSize: fontSize.sm,

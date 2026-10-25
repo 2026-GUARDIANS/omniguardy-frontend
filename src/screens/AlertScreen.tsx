@@ -120,7 +120,8 @@ const styles = StyleSheet.create({
   },
   headline: { fontFamily: fonts.sansBold, fontSize: fontSize.hero, lineHeight: 44, color: colors.alertHeadline },
   divider: { width: 56, height: 2, backgroundColor: colors.alertDivider, marginTop: 24, marginBottom: 24 },
-  meta: { fontFamily: fonts.monoMedium, fontSize: fontSize.xl, color: colors.alertMeta, paddingHorizontal: 16 },
+  // Figma 컨테이너의 좌우 여백 16을 없애 제목과 같은 왼쪽 정렬로 맞춤(사용자 결정, 두 테마 공통)
+  meta: { fontFamily: fonts.monoMedium, fontSize: fontSize.xl, color: colors.alertMeta },
   warnPill: {
     marginTop: 24,
     flexDirection: 'row',

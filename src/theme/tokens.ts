@@ -337,6 +337,8 @@ export const MONO_LINE_HEIGHT_RATIO = 1.3;
 export const themeFlags = {
   /** 비상 화면 동심원 */
   alertRings: pick(true, false),
+  /** 이벤트 상세 Agent 카드 위 마스킹 테이프 장식(Figma "Overlay"). custom에서는 의미 없는 도형으로 보여 숨김 */
+  agentCardTape: pick(true, false),
   /** 이벤트 기록 날짜 태그 기울기 */
   dateTagRotate: pick('-1.5deg', '0deg'),
   /** 원본 SVG 선 색(#A5A696) 아이콘의 덮어쓰기 색. undefined면 원본 색 */

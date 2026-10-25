@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-import { colors, fontSize, fonts, THEME } from './tokens';
+import { colors, fontSize, fonts } from './tokens';
 
 // Figma 텍스트 스타일 중 여러 화면에서 반복되는 것만 모았다.
 export const type = StyleSheet.create({
@@ -21,16 +21,9 @@ export const type = StyleSheet.create({
   value: { fontFamily: fonts.monoRegular, fontSize: fontSize.sm, color: colors.textMuted },
   /** 링크(“전체 보기”, “회원가입”) */
   link: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.sm, color: colors.link },
-  /** 탭 화면 큰 제목 — 'figma'는 장식용(tokens.ts textDecorativeTitle 주석 참고), 'custom'은 brown-600 */
+  /** 탭 화면 큰 제목(홈 "OmniGuardy", "이벤트 기록") — 'figma'는 장식용(tokens.ts textDecorativeTitle 주석 참고), 'custom'은 brown-600 */
   pageTitleDecorative: {
     fontFamily: fonts.sansBold,
-    fontSize: fontSize.display,
-    lineHeight: 38,
-    color: colors.textDecorativeTitle,
-  },
-  /** 홈 헤더 "OmniGuardy" — 'figma'는 pageTitleDecorative와 같음, 'custom'은 워드마크 글꼴(Nunito Sans Light) */
-  homeTitle: {
-    fontFamily: THEME === 'custom' ? fonts.latinLight : fonts.sansBold,
     fontSize: fontSize.display,
     lineHeight: 38,
     color: colors.textDecorativeTitle,

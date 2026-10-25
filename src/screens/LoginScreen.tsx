@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PillButton } from '../components/PillButton';
 import { TextField } from '../components/TextField';
 import { Wordmark } from '../components/Wordmark';
+import { isEmail } from '../lib/validation';
 import type { RootScreenProps } from '../navigation/types';
 import { useAuth } from '../state/AuthContext';
 import { colors, fontSize, fonts, size, THEME, themeFlags } from '../theme/tokens';
@@ -33,6 +34,10 @@ export function LoginScreen({ navigation }: RootScreenProps<'Login'>) {
   const submit = async () => {
     if (!email.trim() || !password) {
       setError('이메일과 비밀번호를 모두 입력해 주세요.');
+      return;
+    }
+    if (!isEmail(email)) {
+      setError('올바른 이메일 형식이 아닙니다.');
       return;
     }
     setError(null);

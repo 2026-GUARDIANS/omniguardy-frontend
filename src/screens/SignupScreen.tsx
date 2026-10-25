@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackHeader } from '../components/BackHeader';
 import { PillButton } from '../components/PillButton';
 import { TextField } from '../components/TextField';
+import { isEmail } from '../lib/validation';
 import type { RootScreenProps } from '../navigation/types';
 import { useAuth } from '../state/AuthContext';
 import { colors, size } from '../theme/tokens';
@@ -12,12 +13,10 @@ import { colors, size } from '../theme/tokens';
 type Field = 'name' | 'email' | 'password' | 'passwordConfirm';
 type Errors = Partial<Record<Field | 'form', string>>;
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 function validate(v: Record<Field, string>): Errors {
   const e: Errors = {};
   if (!v.name.trim()) e.name = '이름을 입력해 주세요.';
-  if (!EMAIL_RE.test(v.email.trim())) e.email = '올바른 이메일 형식이 아닙니다.';
+  if (!isEmail(v.email)) e.email = '올바른 이메일 형식이 아닙니다.';
   if (v.password.length < 8) e.password = '비밀번호는 8자 이상 입력해 주세요.';
   if (v.passwordConfirm !== v.password) e.passwordConfirm = '비밀번호가 일치하지 않습니다.';
   return e;
