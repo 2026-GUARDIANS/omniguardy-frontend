@@ -9,6 +9,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "cloud.omniguardy.app",
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       },
