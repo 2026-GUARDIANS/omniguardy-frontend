@@ -7,7 +7,7 @@ import { BackHeader } from '../components/BackHeader';
 import { LoadState } from '../components/LoadState';
 import { MixedText } from '../components/MixedText';
 import { PillButton } from '../components/PillButton';
-import { RiskBadge } from '../components/Risk';
+import { EventBadge } from '../components/Risk';
 import { VideoClipArea } from '../components/VideoClipArea';
 import { useApiData } from '../hooks/useApiData';
 import { formatDateTime } from '../lib/format';
@@ -21,6 +21,8 @@ export function EventDetailScreen({ navigation, route }: RootScreenProps<'EventD
   const { eventId } = route.params;
   const { clearAlert } = useRealtimeAlert();
   const { data: event, loading, error, reload } = useApiData(() => api.events.get(eventId), [eventId]);
+  // 영상 주소는 상세 응답에 없고 따로 받는다(실제 서버: 5분 유효). 화면에 다시 들어올 때마다 새로 받는다
+  const video = useApiData(() => api.events.getVideoUrl(eventId), [eventId]);
   const [acking, setAcking] = useState(false);
   const [ackError, setAckError] = useState<string | null>(null);
 
@@ -47,7 +49,7 @@ export function EventDetailScreen({ navigation, route }: RootScreenProps<'EventD
         <LoadState loading={loading} error={error} onRetry={reload} hasData={!!event} />
         {event ? (
           <>
-            <VideoClipArea videoUrl={event.videoUrl} />
+            <VideoClipArea videoUrl={video.data ?? event.videoUrl} />
 
             <View style={styles.titleRow}>
               <View style={styles.titleCol}>
@@ -56,7 +58,7 @@ export function EventDetailScreen({ navigation, route }: RootScreenProps<'EventD
                 </Text>
                 <Text style={styles.meta}>{formatDateTime(event.occurredAt)}</Text>
               </View>
-              <RiskBadge risk={event.risk} large />
+              <EventBadge event={event} large />
             </View>
 
             <View style={styles.agentCard}>
@@ -73,19 +75,19 @@ export function EventDetailScreen({ navigation, route }: RootScreenProps<'EventD
                 <Text style={styles.agentLabel} numberOfLines={1}>
                   위험도
                 </Text>
-                <RiskBadge risk={event.agentJudgement.risk} compact />
+                <EventBadge event={{ risk: event.agentJudgement.risk, status: event.status }} compact />
               </View>
               <View style={[styles.agentRow, styles.dashed]}>
                 <Text style={styles.agentLabel} numberOfLines={1}>
                   대응
                 </Text>
-                <Text style={styles.agentAction}>{event.agentJudgement.action}</Text>
+                <Text style={styles.agentAction}>{event.agentJudgement.action || '—'}</Text>
               </View>
               <View style={[styles.agentRow, styles.last]}>
                 <Text style={styles.agentLabel} numberOfLines={1}>
                   판단 근거
                 </Text>
-                <Text style={styles.agentReason}>{event.agentJudgement.reason}</Text>
+                <Text style={styles.agentReason}>{event.agentJudgement.reason || '—'}</Text>
               </View>
             </View>
           </>

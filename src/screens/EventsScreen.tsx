@@ -13,7 +13,9 @@ import { useRealtimeAlert } from '../state/RealtimeAlertContext';
 import { colors, fontSize, fonts, hitSlopFor, radius, riskColors, shadow, themeFlags } from '../theme/tokens';
 import { type } from '../theme/typography';
 
-type Filter = 'ALL' | RiskLevel;
+// HIGH 필터는 CRITICAL을 포함한다. 위험도가 없는(분석 중 등) 이벤트는 "전체"에만 나온다
+type RiskFilter = Exclude<RiskLevel, 'CRITICAL'>;
+type Filter = 'ALL' | RiskFilter;
 
 const CHIP_HEIGHT = 36; // Figma 칩 높이. 터치 영역은 hitSlop으로 44px 보정
 
@@ -86,7 +88,7 @@ function FilterChip({
   onPress,
 }: {
   label: string;
-  risk?: RiskLevel;
+  risk?: RiskFilter;
   selected: boolean;
   onPress: () => void;
 }) {

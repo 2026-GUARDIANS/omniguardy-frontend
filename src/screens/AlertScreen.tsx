@@ -9,7 +9,7 @@ import { LoadState } from '../components/LoadState';
 import { MixedText } from '../components/MixedText';
 import { PillButton } from '../components/PillButton';
 import { useApiData } from '../hooks/useApiData';
-import { formatTime } from '../lib/format';
+import { detectedSentence, formatTime } from '../lib/format';
 import type { RootScreenProps } from '../navigation/types';
 import { useRealtimeAlert } from '../state/RealtimeAlertContext';
 import { colors, fontSize, fonts, radius, shadow, THEME, themeFlags } from '../theme/tokens';
@@ -52,7 +52,7 @@ export function AlertScreen({ navigation, route }: RootScreenProps<'Alert'>) {
       <View style={styles.top}>
         <View style={styles.tag}>
           <MixedText style={styles.tagText} weight="semibold">
-            HIGH · 위험 알림
+            {`${event?.risk ?? 'HIGH'} · 위험 알림`}
           </MixedText>
         </View>
       </View>
@@ -64,7 +64,7 @@ export function AlertScreen({ navigation, route }: RootScreenProps<'Alert'>) {
               <Icon name="alertWarning" color={themeFlags.alertIconColor} />
             </View>
             <Text accessibilityRole="header" accessibilityLiveRegion="assertive" style={styles.headline}>
-              {`${event.title}이\n감지되었습니다`}
+              {detectedSentence(event.title, true)}
             </Text>
             <View style={styles.divider} />
             <MixedText style={styles.meta} weight="medium">{`${formatTime(event.occurredAt)} · 현관`}</MixedText>

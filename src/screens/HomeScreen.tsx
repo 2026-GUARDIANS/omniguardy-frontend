@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api, type DeviceKind, type SecurityEvent } from '../api';
 import { TAB_BAR_SPACE } from '../components/BottomTabBar';
-import { DevAlertButton } from '../components/DevAlertButton';
+import { DevAlertButton, DevThemeLabel } from '../components/DevAlertButton';
 import { EventRow } from '../components/EventRow';
 import { ExampleTag } from '../components/ExampleTag';
 import { Icon } from '../components/icons/Icon';
@@ -13,7 +13,7 @@ import { LoadState } from '../components/LoadState';
 import { MixedText } from '../components/MixedText';
 import { RiskBadge, RiskDot } from '../components/Risk';
 import { useApiData } from '../hooks/useApiData';
-import { daysAgo, formatDateTime, formatTime } from '../lib/format';
+import { daysAgo, detectedSentence, formatDateTime, formatTime } from '../lib/format';
 import type { TabScreenProps } from '../navigation/types';
 import { useRealtimeAlert } from '../state/RealtimeAlertContext';
 import { colors, fontSize, fonts, hitSlopFor, radius, riskColors, shadow, size, spacing, themeFlags } from '../theme/tokens';
@@ -82,20 +82,20 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
         {activeAlert ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`위험도 HIGH 위험 알림. ${activeAlert.title}이 감지되었습니다`}
+            accessibilityLabel={`위험도 ${activeAlert.risk ?? 'HIGH'} 위험 알림. ${detectedSentence(activeAlert.title)}`}
             accessibilityHint="알림 화면을 엽니다"
             onPress={() => navigation.navigate('Alert', { eventId: activeAlert.id })}
             style={({ pressed }) => [styles.alertCard, pressed && { opacity: 0.85 }]}
           >
-            <RiskDot risk="HIGH" />
+            <RiskDot risk={activeAlert.risk ?? 'HIGH'} />
             <View style={styles.alertBody}>
               <MixedText style={styles.alertCaption} weight="semibold">
-                HIGH · 위험 알림
+                {`${activeAlert.risk ?? 'HIGH'} · 위험 알림`}
               </MixedText>
-              <Text style={styles.alertTitle}>{activeAlert.title}이 감지되었습니다</Text>
+              <Text style={styles.alertTitle}>{detectedSentence(activeAlert.title)}</Text>
               <Text style={styles.alertHint}>탭하여 알림 화면 보기 →</Text>
             </View>
-            <RiskBadge risk="HIGH" />
+            <RiskBadge risk={activeAlert.risk ?? 'HIGH'} />
           </Pressable>
         ) : null}
 
@@ -160,6 +160,7 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
         </View>
 
         <DevAlertButton />
+        <DevThemeLabel />
       </ScrollView>
     </SafeAreaView>
   );

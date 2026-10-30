@@ -131,7 +131,7 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
             </View>
             <View style={styles.deviceRow}>
               <MixedText style={[type.body, styles.flexShrink]} weight="regular">
-                실시간 알림 연결 (WebSocket)
+                실시간 알림 연결 (푸시)
               </MixedText>
               <StatusDot label={REALTIME_LABEL[realtimeStatus]} ok={realtimeStatus === 'connected'} />
             </View>

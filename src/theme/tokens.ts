@@ -118,6 +118,11 @@ const figmaColors = {
   warnPillOffText: '#5E5F50',
   alertDetailBorder: 'transparent',
   alertError: '#C9343A', // = danger
+  // 위험도가 없는 이벤트(분석 중·분석 실패·판정 없음) 상태 배지와 점. 글자가 의미를 전달하고 점은 장식
+  pendingBadgeBg: '#FFFFFF',
+  pendingBadgeText: '#6B7280', // 흰 배경 4.8:1
+  pendingBadgeBorder: '#737373', // 흰 배경 4.7:1
+  pendingDot: '#DBE3E9',
   riskHalo: 'rgba(0,0,0,0.08)', // HIGH 점 주변 링 (Figma 0 0 0 4px rgba(0,0,0,0.08))
   wordmark: '#000000', // 로그인 워드마크
 };
@@ -196,6 +201,10 @@ const customColors: ColorTokens = {
   alertDetailBorder: '#FFFFFF',
   // 비상 화면 오류 문구. danger(HIGH)를 navy 위에 쓰면 2.09:1이라 흰색 (11.39:1)
   alertError: '#FFFFFF',
+  pendingBadgeBg: v2.surface,
+  pendingBadgeText: v2.textSecondary, // 5.44:1
+  pendingBadgeBorder: v2.textSecondary,
+  pendingDot: v2.line,
   riskHalo: 'rgba(0,0,0,0.08)', // v2 PNG에서도 같은 링(#EBEBEB on white)
   wordmark: v2.brown600,
 };
@@ -211,9 +220,9 @@ type RiskTone = {
   /** 배지 1px 테두리 색. null이면 테두리 없음 */
   badgeBorder: string | null;
 };
-type RiskTokens = Record<'HIGH' | 'MEDIUM' | 'LOW', RiskTone>;
+type RiskTokens = Record<'HIGH' | 'MEDIUM' | 'LOW' | 'CRITICAL', RiskTone>;
 
-const figmaRisk: RiskTokens = {
+const figmaRiskBase: Omit<RiskTokens, 'CRITICAL'> = {
   HIGH: {
     dot: '#901318', // 원본 그대로
     // 배지 배경. Figma 원본 rgba(144,19,24,0.32) → 조정 #901318 불투명 (흰 글자 9.2:1, 원본 1.6:1)
@@ -240,7 +249,7 @@ const figmaRisk: RiskTokens = {
   },
 };
 
-const customRisk: RiskTokens = {
+const customRiskBase: Omit<RiskTokens, 'CRITICAL'> = {
   HIGH: { dot: v2.HIGH, badge: v2.HIGH, badgeText: '#FFFFFF', chipDot: v2.HIGH, badgeBorder: null }, // 흰 글자 5.44:1
   MEDIUM: {
     dot: v2.MEDIUM,
@@ -261,6 +270,10 @@ const customRisk: RiskTokens = {
     badgeBorder: v2.LOW,
   },
 };
+
+// CRITICAL: 백엔드 정의값(현재 판정 규칙으로는 나오지 않음). 배지 글자는 "CRITICAL", 색은 두 테마 모두 HIGH와 같게(사용자 결정)
+const figmaRisk: RiskTokens = { ...figmaRiskBase, CRITICAL: figmaRiskBase.HIGH };
+const customRisk: RiskTokens = { ...customRiskBase, CRITICAL: customRiskBase.HIGH };
 
 export const riskColors: RiskTokens = pick(figmaRisk, customRisk);
 

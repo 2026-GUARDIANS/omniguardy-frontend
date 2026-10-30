@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { api, type RealtimeStatus, type SecurityEvent } from '../api';
+import { api, isHighOrAbove, type RealtimeStatus, type SecurityEvent } from '../api';
 import { navigationRef } from '../navigation/navigationRef';
 import { useAuth } from './AuthContext';
 
@@ -31,7 +31,7 @@ export function RealtimeAlertProvider({ children }: { children: React.ReactNode 
     const offMessage = api.realtime.subscribe((message) => {
       if (message.type !== 'event') return;
       setEventsVersion((v) => v + 1);
-      if (message.event.risk !== 'HIGH') return;
+      if (!isHighOrAbove(message.event.risk)) return; // HIGH·CRITICAL만 비상 화면
       setActiveAlert(message.event);
       if (navigationRef.isReady()) navigationRef.navigate('Alert', { eventId: message.event.id });
     });

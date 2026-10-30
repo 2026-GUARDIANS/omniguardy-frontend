@@ -1,10 +1,10 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import type { SecurityEvent } from '../api';
+import { isHighOrAbove, type SecurityEvent } from '../api';
 import { formatDateTime } from '../lib/format';
 import { colors, fontSize, fonts, radius, shadow } from '../theme/tokens';
-import { RiskBadge, RiskDot } from './Risk';
+import { EventBadge, eventBadgeLabel, RiskDot } from './Risk';
 
 type Props = {
   event: SecurityEvent;
@@ -18,21 +18,21 @@ export function EventRow({ event, onPress, variant = 'list' }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${event.title}, 위험도 ${event.risk}, ${formatDateTime(event.occurredAt)}`}
+      accessibilityLabel={`${event.title}, ${eventBadgeLabel(event)}, ${formatDateTime(event.occurredAt)}`}
       accessibilityHint="이벤트 상세를 엽니다"
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
         list ? styles.list : styles.home,
-        event.risk === 'HIGH' && list ? shadow.cardMd : shadow.card,
+        isHighOrAbove(event.risk) && list ? shadow.cardMd : shadow.card,
         pressed && { opacity: 0.85 },
       ]}
     >
-      <RiskDot risk={event.risk} halo={list && event.risk === 'HIGH'} />
+      <RiskDot risk={event.risk} halo={list && isHighOrAbove(event.risk)} />
       <Text style={styles.title} numberOfLines={1}>
         {event.title}
       </Text>
-      <RiskBadge risk={event.risk} compact={!list} />
+      <EventBadge event={event} compact={!list} />
     </Pressable>
   );
 }

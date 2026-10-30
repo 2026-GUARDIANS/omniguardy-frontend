@@ -21,6 +21,7 @@ const EXAMPLE_ACTION: Record<RiskLevel, string> = {
   LOW: '이벤트 기록만 저장',
   MEDIUM: '모바일 알림 전송',
   HIGH: '모바일 알림 + 경고 출력',
+  CRITICAL: '모바일 알림 + 사이렌 출력',
 };
 
 const EXAMPLE_REASON: Record<ExampleKey, string> = {
@@ -54,9 +55,24 @@ export function makeExampleEvent(
     id: `example-${seq}`,
     title,
     risk,
+    status: 'COMPLETED',
     occurredAt: occurredAt.toISOString(),
     videoUrl,
     agentJudgement,
+  };
+}
+
+/** 아직 위험도 판정 전인 예시 이벤트(서버에서 riskLevel이 비어 오는 경우) */
+export function makeExampleAnalyzingEvent(occurredAt: Date): SecurityEvent {
+  seq += 1;
+  return {
+    id: `example-${seq}`,
+    title: '분석 중인 보안 이벤트',
+    risk: null,
+    status: 'ANALYZING',
+    occurredAt: occurredAt.toISOString(),
+    videoUrl: null,
+    agentJudgement: { risk: null, action: '', reason: '' },
   };
 }
 
@@ -64,6 +80,7 @@ export function makeExampleEvent(
 export function createExampleEvents(now: Date = new Date()): SecurityEvent[] {
   const ago = (ms: number) => new Date(now.getTime() - ms);
   return [
+    makeExampleAnalyzingEvent(ago(3 * MIN)),
     makeExampleEvent('emergencyGesture', ago(12 * MIN), EXAMPLE_VIDEO_URL),
     makeExampleEvent('rearApproach', ago(48 * MIN)),
     makeExampleEvent('cameraCovered', ago(2 * HOUR)),

@@ -19,10 +19,12 @@ export interface AuthApi {
 }
 
 export interface EventApi {
-  /** 최신순 */
-  list(filter?: { risk?: RiskLevel }): Promise<SecurityEvent[]>;
+  /** 최신순(최근 20개). risk 필터: HIGH는 CRITICAL 포함 */
+  list(filter?: { risk?: Exclude<RiskLevel, 'CRITICAL'> }): Promise<SecurityEvent[]>;
   get(id: string): Promise<SecurityEvent>;
-  /** 이벤트 상세의 "확인 완료" */
+  /** 영상 클립 URL(실제 서버는 5분 유효 S3 주소). 영상이 없으면 null */
+  getVideoUrl(id: string): Promise<string | null>;
+  /** 이벤트 상세의 "확인 완료". 서버 명세 없음: 실제 서버 모드에서는 요청 없이 화면 상태만 정리 */
   acknowledge(id: string): Promise<void>;
 }
 
@@ -37,7 +39,7 @@ export interface SettingsApi {
   updateResponseSettings(patch: Partial<ResponseSettings>): Promise<ResponseSettings>;
 }
 
-/** 실시간 알림 채널. mock과 실제 WebSocket 구현이 같은 인터페이스를 따릅니다. */
+/** 실시간 알림 채널. mock과 실제 FCM 푸시 구현(http/realtime.fcm.ts)이 같은 인터페이스를 따릅니다. */
 export interface RealtimeService {
   connect(): void;
   disconnect(): void;

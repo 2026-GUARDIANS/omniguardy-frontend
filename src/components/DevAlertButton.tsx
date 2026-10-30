@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { devTools } from '../api';
-import { colors, fontSize, fonts, radius, size } from '../theme/tokens';
+import { colors, fontSize, fonts, radius, size, THEME } from '../theme/tokens';
 
 /** 개발용: mock HIGH 알림을 즉시 발행. 개발 빌드 + mock 모드에서만 보인다. 디자인 요소 아님. */
 export function DevAlertButton() {
@@ -19,7 +19,18 @@ export function DevAlertButton() {
   );
 }
 
+/** 개발용: 현재 테마 이름. __DEV__(개발 빌드)에서만 보이며 릴리스 빌드에서는 렌더링되지 않는다. */
+export function DevThemeLabel() {
+  if (!__DEV__) return null;
+  return (
+    <Text style={styles.themeLabel} accessibilityLabel={`개발용 표시, 현재 테마 ${THEME}`}>
+      theme: {THEME}
+    </Text>
+  );
+}
+
 const styles = StyleSheet.create({
+  themeLabel: { textAlign: 'center', fontFamily: fonts.monoRegular, fontSize: fontSize.xxs, color: colors.textMuted },
   btn: {
     minHeight: size.minTouch,
     alignItems: 'center',
