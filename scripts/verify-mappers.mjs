@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 
 import { detectedSentence } from '../src/lib/format.ts';
 import {
-  isHighPushLevel,
   parseVisionEventTypes,
   toEventStatus,
   toRiskLevel,
@@ -86,11 +85,6 @@ ok('visionEvents 파싱(잘못된 JSON은 빈 목록)', () => {
 ok('로그인 응답 → 세션', () => {
   const s = toSession({ accessToken: 't', tokenType: 'Bearer', userId: 17, email: 'guard@example.com', name: '김가디' });
   assert.deepEqual(s, { accessToken: 't', user: { name: '김가디', email: 'guard@example.com' } });
-});
-ok('FCM riskLevel("2"/"3")', () => {
-  assert.equal(isHighPushLevel('3'), true);
-  assert.equal(isHighPushLevel('2'), false);
-  assert.equal(isHighPushLevel(undefined), false);
 });
 ok('알림 문장(detectedSentence)', () => {
   assert.equal(detectedSentence('비상 손동작'), '비상 손동작이 감지되었습니다'); // 받침 있음 → 이

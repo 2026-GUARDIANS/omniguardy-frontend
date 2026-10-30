@@ -12,7 +12,8 @@
     "build": "expo export --platform android --output-dir dist",
     "icons": "node scripts/gen-figma-icons.js",
     "test:mappers": "node --no-warnings scripts/verify-mappers.mjs",
-    "test:client": "node --no-warnings scripts/verify-client.mjs"
+    "test:client": "node --no-warnings scripts/verify-client.mjs",
+    "test:push": "node --no-warnings scripts/verify-push.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",

@@ -3,8 +3,8 @@ import { Platform } from 'react-native';
 import type { RealtimeService } from '../interfaces';
 import { isHighOrAbove, type RealtimeMessage, type RealtimeStatus, type SecurityEvent } from '../types';
 import { request } from './client';
-import type { DeviceTokenSaveRequestDto, SecurityPushDataDto } from './dto';
-import { isHighPushLevel } from './mappers';
+import type { DeviceTokenSaveRequestDto } from './dto';
+import { parseSecurityPush, type SecurityPush } from './mappers';
 import { httpEventApi } from './events.http';
 
 type NotificationsModule = typeof import('expo-notifications');
@@ -13,9 +13,10 @@ type Subscription = { remove(): void };
 /**
  * 실시간 알림 — FCM 푸시 방식(백엔드 FirebasePushAdapter).
  * 1) 로그인 후 connect(): 알림 권한 요청 → FCM 디바이스 토큰 발급 → POST /api/device-tokens 등록
- * 2) 푸시 수신(앱 실행 중) 또는 알림 탭(백그라운드·종료 상태): data.riskLevel이 "3"(HIGH 이상)이면
- *    푸시에 eventId가 없으므로 최신 이벤트 목록을 받아 가장 최근 HIGH 이상 이벤트를 전달한다.
- *    "2"(MEDIUM)는 시스템 알림만 두고, 목록 갱신용으로 최신 이벤트를 전달한다.
+ * 2) 푸시 수신(앱 실행 중) 또는 알림 탭(백그라운드·종료 상태):
+ *    - data.eventId가 있으면 GET /api/security-events/{eventId}로 그 이벤트를 전달한다(알림 탭이면 openDetail).
+ *    - 없으면(현재 백엔드) 최신 목록에서 대체: HIGH 이상 푸시는 가장 최근 HIGH 이상 이벤트,
+ *      MEDIUM은 목록 갱신용으로 최신 이벤트를 전달한다. 상세 조회가 실패해도 이 방식으로 대체한다.
  *
  * 주의: Android Expo Go에서는 원격 푸시를 받을 수 없다(SDK 53+). 개발 빌드나 APK에서만 동작하며,
  * Expo Go에서는 토큰 발급이 실패해 상태가 'disconnected'로 남는다.
@@ -85,14 +86,14 @@ export class FcmRealtimeService implements RealtimeService {
       if (!this.active) return;
 
       this.subscriptions.push(
-        Notifications.addNotificationReceivedListener((n) => this.onPush(n.request.content.data)),
-        Notifications.addNotificationResponseReceivedListener((r) => this.onPush(r.notification.request.content.data)),
+        Notifications.addNotificationReceivedListener((n) => this.onPush(n.request.content.data, false)),
+        Notifications.addNotificationResponseReceivedListener((r) => this.onPush(r.notification.request.content.data, true)),
       );
       // 앱이 종료된 상태에서 알림을 눌러 실행된 경우
       const last = Notifications.getLastNotificationResponse();
       if (last) {
         Notifications.clearLastNotificationResponse();
-        this.onPush(last.notification.request.content.data);
+        this.onPush(last.notification.request.content.data, true);
       }
 
       const token = await Notifications.getDevicePushTokenAsync(); // Android: FCM 토큰
@@ -108,18 +109,33 @@ export class FcmRealtimeService implements RealtimeService {
     }
   }
 
-  private onPush(raw: unknown) {
-    const data = (raw ?? {}) as SecurityPushDataDto;
-    if (data.type !== 'SECURITY_EVENT') return;
-    const wantHigh = isHighPushLevel(data.riskLevel);
-    void this.findLatest(wantHigh)
-      .then((event) => {
-        if (event) this.listeners.forEach((l) => l({ type: 'event', event }));
+  /** opened: 사용자가 알림을 눌러 들어온 경우(백그라운드·종료 상태 포함) */
+  private onPush(raw: unknown, opened: boolean) {
+    const push = parseSecurityPush(raw);
+    if (!push) return;
+    void this.resolveEvent(push)
+      .then((found) => {
+        if (!found) return;
+        const message: RealtimeMessage = { type: 'event', event: found.event, openDetail: opened && found.exact };
+        this.listeners.forEach((l) => l(message));
       })
       .catch((e) => console.warn('푸시 이후 이벤트 조회 실패:', e instanceof Error ? e.message : e));
   }
 
-  /** TODO(백엔드): 푸시 데이터에 eventId가 생기면 목록 조회 대신 상세 조회로 바꾼다 */
+  /** exact: eventId로 정확히 찾았는지(대체 이벤트가 아닌지) */
+  private async resolveEvent(push: SecurityPush): Promise<{ event: SecurityEvent; exact: boolean } | null> {
+    if (push.eventId) {
+      try {
+        return { event: await httpEventApi.get(push.eventId), exact: true };
+      } catch (e) {
+        console.warn('푸시 이벤트 상세 조회 실패, 최신 이벤트로 대체:', e instanceof Error ? e.message : e);
+      }
+    }
+    const event = await this.findLatest(isHighOrAbove(push.risk));
+    return event ? { event, exact: false } : null;
+  }
+
+  /** eventId가 없을 때의 대체: 최신 목록(첫 페이지)에서 찾는다 */
   private async findLatest(wantHigh: boolean): Promise<SecurityEvent | null> {
     const events = await httpEventApi.list();
     return (wantHigh ? events.find((e) => isHighOrAbove(e.risk)) : events[0]) ?? null;

@@ -73,5 +73,10 @@ export type DeviceStatus = {
 
 export type RealtimeStatus = 'connecting' | 'connected' | 'disconnected';
 
-/** 실시간 채널 메시지. 실제 서버는 FCM 푸시를 받아 최신 이벤트를 조회한 뒤 이 형태로 전달한다 */
-export type RealtimeMessage = { type: 'event'; event: SecurityEvent };
+/** 실시간 채널 메시지. 실제 서버는 FCM 푸시를 받아 이벤트를 조회한 뒤 이 형태로 전달한다 */
+export type RealtimeMessage = {
+  type: 'event';
+  event: SecurityEvent;
+  /** 사용자가 알림을 눌러 들어왔고, 푸시의 eventId로 정확한 이벤트를 찾은 경우. HIGH 미만이면 상세 화면을 연다 */
+  openDetail?: boolean;
+};

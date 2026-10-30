@@ -31,7 +31,11 @@ export function RealtimeAlertProvider({ children }: { children: React.ReactNode 
     const offMessage = api.realtime.subscribe((message) => {
       if (message.type !== 'event') return;
       setEventsVersion((v) => v + 1);
-      if (!isHighOrAbove(message.event.risk)) return; // HIGH·CRITICAL만 비상 화면
+      if (!isHighOrAbove(message.event.risk)) {
+        // HIGH 미만은 비상 화면 대신, 알림을 눌러 들어온 경우에만 해당 이벤트 상세를 연다
+        if (message.openDetail && navigationRef.isReady()) navigationRef.navigate('EventDetail', { eventId: message.event.id });
+        return;
+      }
       setActiveAlert(message.event);
       if (navigationRef.isReady()) navigationRef.navigate('Alert', { eventId: message.event.id });
     });

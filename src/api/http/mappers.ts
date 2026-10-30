@@ -1,6 +1,6 @@
 // 서버 DTO → 앱 타입 변환. React Native 의존성이 없는 순수 함수(scripts/verify-mappers.mjs에서 직접 검증).
 import type { EventStatus, RiskLevel, SecurityEvent, Session } from '../types';
-import type { AuthSessionDataDto, SecurityEventDto } from './dto';
+import type { AuthSessionDataDto, SecurityEventDto, SecurityPushDataDto } from './dto';
 
 const RISK_VALUES: readonly RiskLevel[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
@@ -85,5 +85,24 @@ export function toSession(data: AuthSessionDataDto): Session {
   return { accessToken: data.accessToken, user: { name: data.name, email: data.email } };
 }
 
-/** FCM 데이터의 riskLevel("2"/"3") → HIGH 이상 여부. 백엔드는 HIGH·CRITICAL에 "3"을 보낸다 */
-export const isHighPushLevel = (riskLevel: string | undefined): boolean => Number(riskLevel) >= 3;
+/** 현재 백엔드의 숫자 등급(RiskResponseService). HIGH·CRITICAL이 모두 3이라 3은 HIGH로 본다 */
+const RISK_BY_PUSH_NUMBER: Readonly<Record<string, RiskLevel>> = { '2': 'MEDIUM', '3': 'HIGH' };
+
+/** FCM 데이터의 riskLevel → 앱 위험도. 숫자 문자열("2","3")과 enum 이름(MEDIUM/HIGH/CRITICAL) 둘 다 받는다 */
+export function toPushRiskLevel(value: unknown): RiskLevel | null {
+  if (typeof value === 'number') value = String(value);
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return RISK_BY_PUSH_NUMBER[trimmed] ?? toRiskLevel(trimmed);
+}
+
+export type SecurityPush = { risk: RiskLevel | null; eventId: string | null };
+
+/** 보안 이벤트 푸시가 아니면 null. eventId는 백엔드가 아직 보내지 않아 없을 수 있다 */
+export function parseSecurityPush(raw: unknown): SecurityPush | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as SecurityPushDataDto;
+  if (data.type !== 'SECURITY_EVENT') return null;
+  const eventId = typeof data.eventId === 'string' && data.eventId.trim() ? data.eventId.trim() : null;
+  return { risk: toPushRiskLevel(data.riskLevel), eventId };
+}

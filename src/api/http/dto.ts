@@ -78,5 +78,9 @@ export type VideoUrlDto = { url: string };
 
 export type DeviceTokenSaveRequestDto = { token: string; deviceType: 'ANDROID' | 'IOS' };
 
-/** FCM 데이터 메시지(백엔드 FirebasePushAdapter). riskLevel은 숫자 문자열: "2"=MEDIUM, "3"=HIGH 이상. eventId 없음 */
-export type SecurityPushDataDto = { type?: string; riskLevel?: string };
+/**
+ * FCM 데이터 메시지(백엔드 FirebasePushAdapter).
+ * 현재: riskLevel은 숫자 문자열("2"=MEDIUM, "3"=HIGH 이상), eventId 없음.
+ * 변경 요청 후: riskLevel은 enum 이름(MEDIUM/HIGH/CRITICAL), eventId 포함. 둘 다 받는다(mappers.parseSecurityPush)
+ */
+export type SecurityPushDataDto = { type?: unknown; riskLevel?: unknown; eventId?: unknown };

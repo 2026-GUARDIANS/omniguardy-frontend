@@ -45,3 +45,7 @@ yarn-error.*
 
 # 디자인 참고 이미지(Figma 내보내기, 저장소에 포함하지 않음)
 assets/figma-v2/
+
+# Firebase 앱 설정(공개 저장소에 올리지 않음, EAS 빌드에는 파일 환경변수로 전달)
+google-services.json
+GoogleService-Info.plist
