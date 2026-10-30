@@ -83,9 +83,9 @@ ok('visionEvents 파싱(잘못된 JSON은 빈 목록)', () => {
   assert.deepEqual(parseVisionEventTypes('not json'), []);
   assert.deepEqual(parseVisionEventTypes(null), []);
 });
-ok('로그인 응답 → 세션(연락처 없음)', () => {
+ok('로그인 응답 → 세션', () => {
   const s = toSession({ accessToken: 't', tokenType: 'Bearer', userId: 17, email: 'guard@example.com', name: '김가디' });
-  assert.deepEqual(s, { accessToken: 't', user: { name: '김가디', email: 'guard@example.com', phone: null } });
+  assert.deepEqual(s, { accessToken: 't', user: { name: '김가디', email: 'guard@example.com' } });
 });
 ok('FCM riskLevel("2"/"3")', () => {
   assert.equal(isHighPushLevel('3'), true);

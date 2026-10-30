@@ -57,8 +57,8 @@ export function ProfileScreen({ navigation }: RootScreenProps<'Profile'>) {
         <LoadState loading={me.loading} error={me.error} onRetry={me.reload} hasData={!!user} />
 
         <View style={styles.card}>
-          <InfoRow label="이메일" value={user?.email ?? '—'} divider />
-          <InfoRow label="연락처" value={user?.phone ?? '—'} />
+          {/* Figma의 "연락처" 줄은 서버에 값이 없어 뺐다(사용자 결정) */}
+          <InfoRow label="이메일" value={user?.email ?? '—'} />
         </View>
 
         <View style={styles.card}>

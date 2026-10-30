@@ -3,7 +3,6 @@ import type {
   DeviceStatus,
   RealtimeMessage,
   RealtimeStatus,
-  ResponseSettings,
   RiskLevel,
   SecurityEvent,
   Session,
@@ -16,6 +15,10 @@ export interface AuthApi {
   signup(input: SignupInput): Promise<Session>;
   logout(): Promise<void>;
   getMe(): Promise<User>;
+  /** 앱 시작 시 기기에 저장된 세션 복원(로그인 유지). 없으면 null */
+  restore(): Promise<Session | null>;
+  /** 토큰 재발급까지 실패해 다시 로그인해야 할 때 호출된다. 반환값을 호출하면 해제 */
+  onSessionExpired(listener: () => void): () => void;
 }
 
 export interface EventApi {
@@ -34,11 +37,6 @@ export interface DeviceApi {
   stopWarning(): Promise<void>;
 }
 
-export interface SettingsApi {
-  getResponseSettings(): Promise<ResponseSettings>;
-  updateResponseSettings(patch: Partial<ResponseSettings>): Promise<ResponseSettings>;
-}
-
 /** 실시간 알림 채널. mock과 실제 FCM 푸시 구현(http/realtime.fcm.ts)이 같은 인터페이스를 따릅니다. */
 export interface RealtimeService {
   connect(): void;
@@ -53,7 +51,6 @@ export type Api = {
   auth: AuthApi;
   events: EventApi;
   devices: DeviceApi;
-  settings: SettingsApi;
   realtime: RealtimeService;
 };
 

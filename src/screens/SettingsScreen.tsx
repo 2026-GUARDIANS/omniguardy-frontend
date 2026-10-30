@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { api, type RealtimeStatus, type ResponseSettings, type RiskLevel } from '../api';
+import { api, type RealtimeStatus, type RiskLevel } from '../api';
 import { TAB_BAR_SPACE } from '../components/BottomTabBar';
 import { ExampleTag } from '../components/ExampleTag';
 import { Icon } from '../components/icons/Icon';
-import { LabeledToggle } from '../components/LabeledToggle';
-import { LoadState } from '../components/LoadState';
 import { MixedText } from '../components/MixedText';
 import { RiskBadge } from '../components/Risk';
 import { useApiData } from '../hooks/useApiData';
@@ -23,37 +21,19 @@ const REALTIME_LABEL: Record<RealtimeStatus, string> = {
   disconnected: '끊김',
 };
 
-type ToggleKey = keyof ResponseSettings;
-const RESPONSE_ROWS: { risk: RiskLevel; text: string; key: ToggleKey | null }[] = [
-  { risk: 'LOW', text: '이벤트 기록만 저장', key: null },
-  { risk: 'MEDIUM', text: '모바일 알림 전송', key: 'mediumNotify' },
-  { risk: 'HIGH', text: '모바일 알림 + 경고 출력', key: 'highNotifyAndWarn' },
+// 위험도별 대응은 백엔드 정책(RiskResponseService)대로 고정이라 모두 "고정"으로 표시한다(사용자 결정).
+// Figma의 MEDIUM·HIGH 켜기 토글은 바꿀 수 있는 설정이 없어 표시하지 않는다.
+const RESPONSE_ROWS: { risk: RiskLevel; text: string }[] = [
+  { risk: 'LOW', text: '이벤트 기록만 저장' },
+  { risk: 'MEDIUM', text: '모바일 알림 전송' },
+  { risk: 'HIGH', text: '모바일 알림 + 경고 출력' },
 ];
 
 // Figma 1:569 설정 화면
 export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
   const { user } = useAuth();
   const { status: realtimeStatus } = useRealtimeAlert();
-  const remote = useApiData(() => api.settings.getResponseSettings());
   const devices = useApiData(() => api.devices.getStatuses());
-  // 사용자가 바꾼 값(저장 응답 포함)이 있으면 그것을, 없으면 서버에서 불러온 값을 쓴다.
-  const [local, setLocal] = useState<ResponseSettings | null>(null);
-  const settings = local ?? remote.data;
-  const [saveError, setSaveError] = useState<string | null>(null);
-
-  const toggle = async (key: ToggleKey, next: boolean) => {
-    if (!settings) return;
-    const prev = settings;
-    setLocal({ ...settings, [key]: next }); // 낙관적 업데이트
-    setSaveError(null);
-    try {
-      setLocal(await api.settings.updateResponseSettings({ [key]: next }));
-    } catch (e) {
-      setLocal(prev);
-      setSaveError(e instanceof Error ? e.message : '설정을 저장하지 못했습니다.');
-    }
-  };
-
   const allConnected = devices.data?.every((d) => d.connected);
 
   return (
@@ -91,27 +71,12 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
                   <RiskBadge risk={row.risk} compact />
                   <Text style={type.bodySm}>{row.text}</Text>
                 </View>
-                {row.key == null ? (
-                  <View style={styles.fixedChip} accessible accessibilityLabel="고정, 변경할 수 없음">
-                    <Text style={styles.fixedText}>고정</Text>
-                  </View>
-                ) : (
-                  <LabeledToggle
-                    accessibilityLabel={`${row.risk} ${row.text}`}
-                    value={settings?.[row.key] ?? false}
-                    disabled={!settings}
-                    onChange={(next) => toggle(row.key as ToggleKey, next)}
-                  />
-                )}
+                <View style={styles.fixedChip} accessible accessibilityLabel="고정, 변경할 수 없음">
+                  <Text style={styles.fixedText}>고정</Text>
+                </View>
               </View>
             ))}
           </View>
-          <LoadState loading={remote.loading} error={remote.error} onRetry={remote.reload} hasData={!!settings} />
-          {saveError ? (
-            <Text style={styles.error} accessibilityLiveRegion="polite">
-              {saveError}
-            </Text>
-          ) : null}
         </View>
 
         <View style={styles.section}>
@@ -226,5 +191,4 @@ const styles = StyleSheet.create({
   statusDotRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dot: { width: 7, height: 7, borderRadius: 4 },
   statusText: { fontFamily: fonts.monoKoRegular, fontSize: fontSize.xs, color: colors.textMuted },
-  error: { fontFamily: fonts.sansRegular, fontSize: fontSize.xs, color: colors.danger, paddingHorizontal: 4 },
 });

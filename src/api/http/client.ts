@@ -7,6 +7,19 @@ export function setAccessToken(token: string | null) {
   accessToken = token;
 }
 
+/** 세션 상태 변화를 auth 구현에 알리는 훅(저장소 갱신, 강제 로그아웃) */
+type SessionHooks = {
+  /** 토큰 재발급 성공: 저장된 세션의 토큰을 갱신한다 */
+  onTokenRefreshed?: (token: string) => void;
+  /** 재발급까지 실패: 다시 로그인해야 한다 */
+  onExpired?: () => void;
+};
+let sessionHooks: SessionHooks = {};
+
+export function setSessionHooks(hooks: SessionHooks) {
+  sessionHooks = hooks;
+}
+
 export class NotImplementedError extends Error {
   constructor(what: string) {
     super(`서버 명세에 없는 기능입니다: ${what}`);
@@ -15,12 +28,13 @@ export class NotImplementedError extends Error {
 
 /** 서버 ErrorResponse({ success:false, status, code, message })를 담는 오류 */
 export class ApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly code: string | null,
-  ) {
+  readonly status: number;
+  readonly code: string | null;
+
+  constructor(message: string, status: number, code: string | null) {
     super(message);
+    this.status = status;
+    this.code = code;
   }
 }
 
@@ -68,6 +82,7 @@ export function refreshAccessToken(): Promise<boolean> {
       if (!res.ok) return false;
       const json = (await res.json()) as ApiEnvelope<TokenDataDto>;
       setAccessToken(json.data.accessToken);
+      sessionHooks.onTokenRefreshed?.(json.data.accessToken);
       return true;
     } catch {
       return false;
@@ -103,8 +118,10 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   } catch {
     throw new ApiError('서버에 연결할 수 없습니다. 네트워크 상태를 확인해 주세요.', 0, 'NETWORK_ERROR');
   }
-  if (res.status === 401 && !anonymous && retryOnUnauthorized && (await refreshAccessToken())) {
-    res = await send();
+  if (res.status === 401 && !anonymous && retryOnUnauthorized) {
+    if (await refreshAccessToken()) res = await send();
+    // 재발급 실패 또는 재시도도 401: 세션 만료로 보고 로그인 화면으로 보낸다
+    if (res.status === 401) sessionHooks.onExpired?.();
   }
   if (!res.ok) throw await toApiError(res);
   if (res.status === 204) return undefined as T;

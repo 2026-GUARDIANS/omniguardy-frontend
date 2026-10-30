@@ -82,8 +82,7 @@ export function toSecurityEvent(dto: SecurityEventDto): SecurityEvent {
 }
 
 export function toSession(data: AuthSessionDataDto): Session {
-  // 서버에 연락처를 돌려주는 API가 없다(회원가입 요청에만 phoneNumber가 있음)
-  return { accessToken: data.accessToken, user: { name: data.name, email: data.email, phone: null } };
+  return { accessToken: data.accessToken, user: { name: data.name, email: data.email } };
 }
 
 /** FCM 데이터의 riskLevel("2"/"3") → HIGH 이상 여부. 백엔드는 HIGH·CRITICAL에 "3"을 보낸다 */

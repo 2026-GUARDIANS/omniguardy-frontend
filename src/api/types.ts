@@ -45,11 +45,10 @@ export type SecurityEvent = {
   agentJudgement: AgentJudgement;
 };
 
-/** 사용자. 서버에 내 정보 조회 API가 없어 로그인·회원가입 응답 값을 쓴다(연락처 없음) */
+/** 사용자. 서버에 내 정보 조회 API가 없어 로그인·회원가입 응답 값을 쓴다 */
 export type User = {
   name: string;
   email: string;
-  phone: string | null;
 };
 
 export type Session = {
@@ -70,12 +69,6 @@ export type DeviceKind = 'camera' | 'voice' | 'keypad';
 export type DeviceStatus = {
   kind: DeviceKind;
   connected: boolean;
-};
-
-/** 임시(서버 명세 없음): 위험도별 대응 설정 (LOW는 "기록만 저장" 고정) */
-export type ResponseSettings = {
-  mediumNotify: boolean;
-  highNotifyAndWarn: boolean;
 };
 
 export type RealtimeStatus = 'connecting' | 'connected' | 'disconnected';

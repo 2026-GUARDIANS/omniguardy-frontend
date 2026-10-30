@@ -1,4 +1,4 @@
-import type { DeviceApi, SettingsApi } from '../interfaces';
+import type { DeviceApi } from '../interfaces';
 import { sleep } from './constants';
 import { mockStore } from './store';
 
@@ -15,17 +15,5 @@ export const mockDeviceApi: DeviceApi = {
   async stopWarning() {
     await sleep();
     mockStore.warningActive = false;
-  },
-};
-
-export const mockSettingsApi: SettingsApi = {
-  async getResponseSettings() {
-    await sleep();
-    return { ...mockStore.settings };
-  },
-  async updateResponseSettings(patch) {
-    await sleep();
-    mockStore.settings = { ...mockStore.settings, ...patch };
-    return { ...mockStore.settings };
   },
 };
