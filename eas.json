@@ -16,6 +16,12 @@
         "EXPO_PUBLIC_THEME": "figma",
         "EXPO_PUBLIC_API_BASE_URL": "https://api.omniguardy.cloud"
       }
+    },
+    "device-test-custom": {
+      "extends": "device-test",
+      "env": {
+        "EXPO_PUBLIC_THEME": "custom"
+      }
     }
   }
 }
