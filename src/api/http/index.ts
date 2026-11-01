@@ -10,9 +10,8 @@ const notInSpec = (what: string) => (): never => {
   throw new NotImplementedError(what);
 };
 
-// 서버 명세 없음: 장치 연결 상태 조회, 경고음 중지(/api/sounds/{type}은 재생만 있음)
+// 서버 명세 없음: 경고음 중지(/api/sounds/{type}은 재생만 있음)
 const httpDeviceApi: DeviceApi = {
-  getStatuses: notInSpec('장치 상태 조회'),
   stopWarning: notInSpec('경고 끄기'),
 };
 

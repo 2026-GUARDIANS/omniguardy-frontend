@@ -13,7 +13,7 @@ import { useRealtimeAlert } from '../state/RealtimeAlertContext';
 import { colors, fontSize, fonts, hitSlopFor, radius, riskColors, shadow, themeFlags } from '../theme/tokens';
 import { type } from '../theme/typography';
 
-// HIGH 필터는 CRITICAL을 포함한다. 위험도가 없는(분석 중 등) 이벤트는 "전체"에만 나온다
+// 필터는 서버가 해당 위험도만 거른다. CRITICAL과 위험도가 없는(분석 중 등) 이벤트는 "전체"에만 나온다
 type RiskFilter = Exclude<RiskLevel, 'CRITICAL'>;
 type Filter = 'ALL' | RiskFilter;
 

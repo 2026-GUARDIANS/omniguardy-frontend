@@ -1,19 +1,22 @@
 import type { EventApi } from '../interfaces';
-import { matchesRiskFilter } from '../types';
-import { ApiError, request } from './client';
-import type { SecurityEventDto, SecurityEventPageDto, VideoUrlDto } from './dto';
-import { toSecurityEvent } from './mappers';
+import { ApiError, request, requestData } from './client';
+import type { HomeSummaryDto, SecurityEventDto, SecurityEventPageDto, VideoUrlDto } from './dto';
+import { toHomeSummary, toSecurityEvent } from './mappers';
 
 /** 목록은 최근 20개만 불러온다(무한 스크롤은 추후). 서버 기본값도 20, 최대 100 */
 export const EVENT_PAGE_SIZE = 20;
 
 export const httpEventApi: EventApi = {
-  // GET /api/security-events?page&size — 최신순. 위험도 필터는 서버에 없어 받아 온 범위 안에서 거른다
+  // GET /api/security-events?page&size[&riskLevel] — 최신순. 위험도 필터는 서버가 페이지를 나누기 전에 거른다
   async list(filter) {
-    const page = await request<SecurityEventPageDto>(`/api/security-events?page=0&size=${EVENT_PAGE_SIZE}`);
-    const events = page.content.map(toSecurityEvent);
-    const risk = filter?.risk;
-    return risk ? events.filter((e) => matchesRiskFilter(e.risk, risk)) : events;
+    const risk = filter?.risk ? `&riskLevel=${filter.risk}` : '';
+    const page = await request<SecurityEventPageDto>(`/api/security-events?page=0&size=${EVENT_PAGE_SIZE}${risk}`);
+    return page.content.map(toSecurityEvent);
+  },
+
+  // GET /api/home/summary
+  async getHomeSummary() {
+    return toHomeSummary(await requestData<HomeSummaryDto>('/api/home/summary'));
   },
 
   // GET /api/security-events/{eventId}

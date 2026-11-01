@@ -3,12 +3,15 @@
 import assert from 'node:assert/strict';
 
 import { detectedSentence } from '../src/lib/format.ts';
+import { formatMobilePhone, isMobilePhone } from '../src/lib/validation.ts';
 import {
   parseVisionEventTypes,
   toEventStatus,
+  toHomeSummary,
   toRiskLevel,
   toSecurityEvent,
   toSession,
+  toUser,
 } from '../src/api/http/mappers.ts';
 
 let passed = 0;
@@ -84,7 +87,38 @@ ok('visionEvents 파싱(잘못된 JSON은 빈 목록)', () => {
 });
 ok('로그인 응답 → 세션', () => {
   const s = toSession({ accessToken: 't', tokenType: 'Bearer', userId: 17, email: 'guard@example.com', name: '김가디' });
-  assert.deepEqual(s, { accessToken: 't', user: { name: '김가디', email: 'guard@example.com' } });
+  assert.deepEqual(s, { accessToken: 't', user: { name: '김가디', email: 'guard@example.com', phone: null } });
+});
+ok('내 정보(/api/users/me) → 사용자', () => {
+  assert.deepEqual(toUser({ name: '김가디', email: 'guard@example.com', phoneNumber: '010-1234-5678' }), {
+    name: '김가디',
+    email: 'guard@example.com',
+    phone: '010-1234-5678',
+  });
+  assert.equal(toUser({ name: 'a', email: 'b', phoneNumber: null }).phone, null);
+  assert.equal(toUser({ name: 'a', email: 'b', phoneNumber: '  ' }).phone, null);
+});
+ok('홈 요약(/api/home/summary)', () => {
+  assert.deepEqual(toHomeSummary({ securityStatus: 'HIGH', lastDetectedAt: '2026-10-31T14:20:00+09:00', todayEventCount: 3 }), {
+    latestRisk: 'HIGH',
+    lastDetectedAt: '2026-10-31T14:20:00+09:00',
+    todayEventCount: 3,
+  });
+  assert.deepEqual(toHomeSummary({ securityStatus: null, lastDetectedAt: null, todayEventCount: 0 }), {
+    latestRisk: null,
+    lastDetectedAt: null,
+    todayEventCount: 0,
+  });
+});
+ok('휴대폰 번호 검사·형식', () => {
+  for (const v of ['010-1234-5678', '01012345678', '010 1234 5678', '011-123-4567']) assert.equal(isMobilePhone(v), true, v);
+  for (const v of ['', '02-123-4567', '010-123', '010-1234-56789', 'abc']) assert.equal(isMobilePhone(v), false, v);
+  assert.equal(formatMobilePhone('01012345678'), '010-1234-5678');
+  assert.equal(formatMobilePhone('0111234567'), '011-123-4567');
+});
+ok('회원가입 응답 → 세션(연락처는 입력값)', () => {
+  const s = toSession({ accessToken: 't', tokenType: 'Bearer', userId: 17, email: 'guard@example.com', name: '김가디' }, '010-0000-0000');
+  assert.equal(s.user.phone, '010-0000-0000');
 });
 ok('알림 문장(detectedSentence)', () => {
   assert.equal(detectedSentence('비상 손동작'), '비상 손동작이 감지되었습니다'); // 받침 있음 → 이

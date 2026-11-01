@@ -5,12 +5,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackHeader } from '../components/BackHeader';
 import { PillButton } from '../components/PillButton';
 import { TextField } from '../components/TextField';
-import { isEmail } from '../lib/validation';
+import { formatMobilePhone, isEmail, isMobilePhone } from '../lib/validation';
 import type { RootScreenProps } from '../navigation/types';
 import { useAuth } from '../state/AuthContext';
 import { colors, size } from '../theme/tokens';
 
-type Field = 'name' | 'email' | 'password' | 'passwordConfirm';
+type Field = 'name' | 'email' | 'password' | 'phone';
 type Errors = Partial<Record<Field | 'form', string>>;
 
 function validate(v: Record<Field, string>): Errors {
@@ -18,19 +18,19 @@ function validate(v: Record<Field, string>): Errors {
   if (!v.name.trim()) e.name = '이름을 입력해 주세요.';
   if (!isEmail(v.email)) e.email = '올바른 이메일 형식이 아닙니다.';
   if (v.password.length < 8) e.password = '비밀번호는 8자 이상 입력해 주세요.';
-  if (v.passwordConfirm !== v.password) e.passwordConfirm = '비밀번호가 일치하지 않습니다.';
+  if (!isMobilePhone(v.phone)) e.phone = '휴대폰 번호를 정확히 입력해 주세요. (예: 010-1234-5678)';
   return e;
 }
 
-// Figma 1:246 회원가입 페이지
+// Figma 1:246 회원가입 페이지. 네 번째 칸은 Figma의 "비밀번호 확인" 대신 휴대폰 번호(사용자 결정)
 export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
   const { signUp } = useAuth();
-  const [values, setValues] = useState<Record<Field, string>>({ name: '', email: '', password: '', passwordConfirm: '' });
+  const [values, setValues] = useState<Record<Field, string>>({ name: '', email: '', password: '', phone: '' });
   const [errors, setErrors] = useState<Errors>({});
   const [loading, setLoading] = useState(false);
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
-  const passwordConfirmRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
 
   const set = (k: Field) => (text: string) => setValues((v) => ({ ...v, [k]: text }));
 
@@ -40,7 +40,12 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
     if (Object.keys(e).length) return;
     setLoading(true);
     try {
-      await signUp({ name: values.name.trim(), email: values.email.trim(), password: values.password });
+      await signUp({
+        name: values.name.trim(),
+        email: values.email.trim(),
+        password: values.password,
+        phone: formatMobilePhone(values.phone),
+      });
     } catch (err) {
       setErrors({ form: err instanceof Error ? err.message : '회원가입에 실패했습니다.' });
       setLoading(false);
@@ -91,20 +96,21 @@ export function SignupScreen({ navigation }: RootScreenProps<'Signup'>) {
             autoComplete="new-password"
             textContentType="newPassword"
             returnKeyType="next"
-            onSubmitEditing={() => passwordConfirmRef.current?.focus()}
+            onSubmitEditing={() => phoneRef.current?.focus()}
             error={errors.password}
           />
           <TextField
-            ref={passwordConfirmRef}
-            label="비밀번호 확인"
-            value={values.passwordConfirm}
-            onChangeText={set('passwordConfirm')}
-            secureTextEntry
-            autoComplete="new-password"
-            textContentType="newPassword"
+            ref={phoneRef}
+            label="휴대폰 번호"
+            placeholder="010-1234-5678"
+            value={values.phone}
+            onChangeText={set('phone')}
+            keyboardType="phone-pad"
+            autoComplete="tel"
+            textContentType="telephoneNumber"
             returnKeyType="done"
             onSubmitEditing={submit}
-            error={errors.passwordConfirm ?? errors.form}
+            error={errors.phone ?? errors.form}
           />
         </ScrollView>
         <View style={styles.footer}>

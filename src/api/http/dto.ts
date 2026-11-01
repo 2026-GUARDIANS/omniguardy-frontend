@@ -1,5 +1,5 @@
 // 서버 응답·요청 형태(DTO). 출처: https://api.omniguardy.cloud/v3/api-docs (OpenAPI 3.1)
-// Swagger 예시와 백엔드 코드가 다른 부분은 백엔드 코드(omniguardy-backend 351cb5d)를 따른다.
+// Swagger 예시와 백엔드 코드가 다른 부분은 백엔드 코드(omniguardy-backend c417047)를 따른다.
 
 /** 인증 계열 응답의 공통 껍데기. 보안 이벤트 조회 API는 이 껍데기 없이 본문만 온다 */
 export type ApiEnvelope<T> = {
@@ -30,6 +30,18 @@ export type AuthSessionDataDto = {
 };
 
 export type TokenDataDto = { accessToken: string; tokenType: string };
+
+/** GET /api/users/me (공통 껍데기 안의 data) */
+export type CurrentUserDto = { name: string; email: string; phoneNumber: string | null };
+
+/** GET /api/home/summary (공통 껍데기 안의 data). 서버가 Asia/Seoul 기준 "오늘"로 센다 */
+export type HomeSummaryDto = {
+  /** 가장 최근 보안 이벤트의 위험도. 이벤트가 없거나 판정 전이면 null */
+  securityStatus: string | null;
+  /** 시간대 포함(+09:00). 이벤트가 없으면 null */
+  lastDetectedAt: string | null;
+  todayEventCount: number;
+};
 
 /** 백엔드 SecurityEventStatus. Swagger 예시의 "ANALYZED"는 실제 값이 아니다 */
 export type SecurityEventStatusDto = 'AUDIO_DETECTED' | 'CAMERA_REQUESTED' | 'VISION_ANALYZED' | 'COMPLETED' | 'FAILED';

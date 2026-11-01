@@ -1,6 +1,6 @@
 // 서버 DTO → 앱 타입 변환. React Native 의존성이 없는 순수 함수(scripts/verify-mappers.mjs에서 직접 검증).
-import type { EventStatus, RiskLevel, SecurityEvent, Session } from '../types';
-import type { AuthSessionDataDto, SecurityEventDto, SecurityPushDataDto } from './dto';
+import type { EventStatus, HomeSummary, RiskLevel, SecurityEvent, Session, User } from '../types';
+import type { AuthSessionDataDto, CurrentUserDto, HomeSummaryDto, SecurityEventDto, SecurityPushDataDto } from './dto';
 
 const RISK_VALUES: readonly RiskLevel[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
@@ -81,8 +81,9 @@ export function toSecurityEvent(dto: SecurityEventDto): SecurityEvent {
   };
 }
 
-export function toSession(data: AuthSessionDataDto): Session {
-  return { accessToken: data.accessToken, user: { name: data.name, email: data.email } };
+/** 로그인·회원가입 응답에는 연락처가 없다. 회원가입은 입력값을 쓰고, 그 외에는 getMe(/api/users/me)로 채운다 */
+export function toSession(data: AuthSessionDataDto, phone: string | null = null): Session {
+  return { accessToken: data.accessToken, user: { name: data.name, email: data.email, phone } };
 }
 
 /** 현재 백엔드의 숫자 등급(RiskResponseService). HIGH·CRITICAL이 모두 3이라 3은 HIGH로 본다 */
@@ -105,4 +106,16 @@ export function parseSecurityPush(raw: unknown): SecurityPush | null {
   if (data.type !== 'SECURITY_EVENT') return null;
   const eventId = typeof data.eventId === 'string' && data.eventId.trim() ? data.eventId.trim() : null;
   return { risk: toPushRiskLevel(data.riskLevel), eventId };
+}
+
+export function toUser(dto: CurrentUserDto): User {
+  return { name: dto.name, email: dto.email, phone: dto.phoneNumber?.trim() || null };
+}
+
+export function toHomeSummary(dto: HomeSummaryDto): HomeSummary {
+  return {
+    latestRisk: toRiskLevel(dto.securityStatus),
+    lastDetectedAt: dto.lastDetectedAt,
+    todayEventCount: dto.todayEventCount ?? 0,
+  };
 }

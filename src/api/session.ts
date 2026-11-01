@@ -22,7 +22,8 @@ export async function loadSession(): Promise<Session | null> {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<Session>;
     if (!parsed.accessToken || !parsed.user?.email) return null;
-    return { accessToken: parsed.accessToken, user: { name: parsed.user.name ?? '', email: parsed.user.email } };
+    const { name, email, phone } = parsed.user;
+    return { accessToken: parsed.accessToken, user: { name: name ?? '', email, phone: phone ?? null } };
   } catch {
     return null; // 손상된 값은 무시하고 다시 로그인
   }

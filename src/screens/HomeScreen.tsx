@@ -2,13 +2,11 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { api, type DeviceKind, type SecurityEvent } from '../api';
+import { api, type SecurityEvent } from '../api';
 import { TAB_BAR_SPACE } from '../components/BottomTabBar';
 import { DevAlertButton, DevThemeLabel } from '../components/DevAlertButton';
 import { EventRow } from '../components/EventRow';
-import { ExampleTag } from '../components/ExampleTag';
 import { Icon } from '../components/icons/Icon';
-import type { FigmaIconName } from '../components/icons/figmaSvgs';
 import { LoadState } from '../components/LoadState';
 import { MixedText } from '../components/MixedText';
 import { RiskBadge, RiskDot } from '../components/Risk';
@@ -19,23 +17,17 @@ import { useRealtimeAlert } from '../state/RealtimeAlertContext';
 import { colors, fontSize, fonts, hitSlopFor, radius, riskColors, shadow, size, spacing, themeFlags } from '../theme/tokens';
 import { type } from '../theme/typography';
 
-const DEVICES: Record<DeviceKind, { label: string; icon: FigmaIconName }> = {
-  camera: { label: '카메라', icon: 'deviceCamera' },
-  voice: { label: '음성 감지', icon: 'deviceVoice' },
-  keypad: { label: '키패드', icon: 'deviceKeypad' },
-};
-
 const RECENT_COUNT = 2;
 
-// Figma 1:285 홈 화면
+// Figma 1:285 홈 화면. Figma의 "장치 연결" 영역은 뺐다(사용자 결정)
 export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
   const { activeAlert, eventsVersion } = useRealtimeAlert();
   const events = useApiData(() => api.events.list(), [eventsVersion]);
-  const devices = useApiData(() => api.devices.getStatuses());
+  // 마지막 감지·오늘 이벤트 수는 GET /api/home/summary(서버가 전체 기록 기준으로 계산)
+  const summary = useApiData(() => api.events.getHomeSummary(), [eventsVersion]);
 
   const list = events.data ?? [];
-  const latest = list[0];
-  const todayCount = list.filter((e) => daysAgo(e.occurredAt) === 0).length;
+  const lastDetectedAt = summary.data?.lastDetectedAt ?? null;
   const openEvent = (e: SecurityEvent) => navigation.navigate('EventDetail', { eventId: e.id });
 
   return (
@@ -71,10 +63,10 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
           <Text style={styles.statusMeta}>
             마지막 감지:{' '}
             <Text style={styles.statusMetaValue}>
-              {latest ? (daysAgo(latest.occurredAt) === 0 ? formatTime(latest.occurredAt) : formatDateTime(latest.occurredAt)) : '—'}
+              {lastDetectedAt ? (daysAgo(lastDetectedAt) === 0 ? formatTime(lastDetectedAt) : formatDateTime(lastDetectedAt)) : '—'}
             </Text>
             {' · 오늘 이벤트 '}
-            <Text style={styles.statusMetaValue}>{events.data ? todayCount : '—'}</Text>건
+            <Text style={styles.statusMetaValue}>{summary.data ? summary.data.todayEventCount : '—'}</Text>건
           </Text>
         </View>
 
@@ -98,36 +90,6 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
             <RiskBadge risk={activeAlert.risk ?? 'HIGH'} />
           </Pressable>
         ) : null}
-
-        {/* 장치 연결 */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text accessibilityRole="header" style={type.sectionTitle}>
-              장치 연결
-            </Text>
-            <ExampleTag />
-          </View>
-          <LoadState loading={devices.loading} error={devices.error} onRetry={devices.reload} hasData={!!devices.data} />
-          {devices.data ? (
-            <View style={styles.tiles}>
-              {devices.data.map((d) => (
-                <View
-                  key={d.kind}
-                  style={styles.tile}
-                  accessible
-                  accessibilityLabel={`${DEVICES[d.kind].label} ${d.connected ? '연결됨' : '연결 끊김'}`}
-                >
-                  <Icon name={DEVICES[d.kind].icon} color={themeFlags.iconTint} />
-                  <Text style={styles.tileLabel}>{DEVICES[d.kind].label}</Text>
-                  <View style={styles.tileStatus}>
-                    <View style={[styles.tileDot, !d.connected && { backgroundColor: colors.textMuted }]} />
-                    <Text style={styles.tileStatusText}>{d.connected ? '연결됨' : '끊김'}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : null}
-        </View>
 
         {/* 최근 이벤트 */}
         <View style={styles.sectionRecent}>
@@ -229,24 +191,8 @@ const styles = StyleSheet.create({
   alertTitle: { fontFamily: fonts.sansBold, fontSize: fontSize.lg, color: colors.textTitle },
   alertHint: { fontFamily: fonts.sansRegular, fontSize: fontSize.sm, color: colors.link },
 
-  section: { gap: 10 },
   sectionRecent: { gap: 6 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 },
-  tiles: { flexDirection: 'row', gap: 8 },
-  tile: {
-    flex: 1,
-    padding: 13,
-    gap: 10,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-    borderRadius: radius.tile,
-    ...shadow.card,
-  },
-  tileLabel: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.sm, color: colors.textStrong },
-  tileStatus: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  tileDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.ok },
-  tileStatusText: { fontFamily: fonts.monoKoRegular, fontSize: fontSize.xxs, color: colors.deviceStatusText },
   moreLink: { minHeight: size.minTouch, justifyContent: 'center', paddingLeft: 8 },
   recentList: { gap: 8 },
 });

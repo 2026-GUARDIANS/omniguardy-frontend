@@ -13,15 +13,15 @@ export const mockAuthApi: AuthApi = {
     await sleep();
     // 같은 이메일로 회원가입했다면 그 입력값을 쓰고, 아니면 예시 사용자로 표시
     if (!mockStore.user || mockStore.user.email !== email) {
-      mockStore.user = { name: EXAMPLE_USER_NAME, email };
+      mockStore.user = { name: EXAMPLE_USER_NAME, email, phone: null };
     }
     const s = session(mockStore.user);
     await saveSession(s);
     return s;
   },
-  async signup({ name, email }) {
+  async signup({ name, email, phone }) {
     await sleep();
-    mockStore.user = { name, email };
+    mockStore.user = { name, email, phone };
     const s = session(mockStore.user);
     await saveSession(s);
     return s;

@@ -15,6 +15,7 @@ import { useAuth } from '../state/AuthContext';
 import { colors, fontSize, fonts, radius, shadow, themeFlags } from '../theme/tokens';
 
 // Figma 1:658 마이페이지(프로필). 하단 탭은 "설정"이 활성(Figma 기준).
+// 이름·이메일·연락처·로그아웃만 둔다(비밀번호 변경은 뺐다, 사용자 결정).
 export function ProfileScreen({ navigation }: RootScreenProps<'Profile'>) {
   const { user: sessionUser, signOut } = useAuth();
   const me = useApiData(() => api.auth.getMe());
@@ -57,20 +58,11 @@ export function ProfileScreen({ navigation }: RootScreenProps<'Profile'>) {
         <LoadState loading={me.loading} error={me.error} onRetry={me.reload} hasData={!!user} />
 
         <View style={styles.card}>
-          {/* Figma의 "연락처" 줄은 서버에 값이 없어 뺐다(사용자 결정) */}
-          <InfoRow label="이메일" value={user?.email ?? '—'} />
+          <InfoRow label="이메일" value={user?.email ?? '—'} divider />
+          <InfoRow label="연락처" value={user?.phone ?? '—'} />
         </View>
 
         <View style={styles.card}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="비밀번호 변경"
-            onPress={() => Alert.alert('비밀번호 변경', '준비 중인 기능입니다.')}
-            style={({ pressed }) => [styles.linkRow, styles.divider, pressed && styles.pressed]}
-          >
-            <Text style={styles.label}>비밀번호 변경</Text>
-            <Icon name="chevronRight" color={themeFlags.iconTint} />
-          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="로그아웃"

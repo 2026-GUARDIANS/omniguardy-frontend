@@ -1,6 +1,6 @@
 // 화면은 이 인터페이스만 사용합니다. 구현(mock / http)은 src/api/index.ts에서 고릅니다.
 import type {
-  DeviceStatus,
+  HomeSummary,
   RealtimeMessage,
   RealtimeStatus,
   RiskLevel,
@@ -22,8 +22,10 @@ export interface AuthApi {
 }
 
 export interface EventApi {
-  /** 최신순(최근 20개). risk 필터: HIGH는 CRITICAL 포함 */
+  /** 최신순(최근 20개). risk 필터는 서버가 해당 위험도만 거른다(CRITICAL은 "전체"에만 나온다) */
   list(filter?: { risk?: Exclude<RiskLevel, 'CRITICAL'> }): Promise<SecurityEvent[]>;
+  /** 홈 화면 상태 카드(마지막 감지 시각, 오늘 이벤트 수) */
+  getHomeSummary(): Promise<HomeSummary>;
   get(id: string): Promise<SecurityEvent>;
   /** 영상 클립 URL(실제 서버는 5분 유효 S3 주소). 영상이 없으면 null */
   getVideoUrl(id: string): Promise<string | null>;
@@ -32,7 +34,6 @@ export interface EventApi {
 }
 
 export interface DeviceApi {
-  getStatuses(): Promise<DeviceStatus[]>;
   /** 알림 화면의 "경고 끄기" */
   stopWarning(): Promise<void>;
 }

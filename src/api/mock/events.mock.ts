@@ -1,5 +1,6 @@
 import type { EventApi } from '../interfaces';
 import { matchesRiskFilter } from '../types';
+import { daysAgo } from '../../lib/format';
 import { sleep } from './constants';
 import { mockStore } from './store';
 
@@ -9,6 +10,15 @@ export const mockEventApi: EventApi = {
     const sorted = [...mockStore.events].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
     const risk = filter?.risk;
     return risk ? sorted.filter((e) => matchesRiskFilter(e.risk, risk)) : sorted;
+  },
+  async getHomeSummary() {
+    await sleep();
+    const latest = [...mockStore.events].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt))[0];
+    return {
+      latestRisk: latest?.risk ?? null,
+      lastDetectedAt: latest?.occurredAt ?? null,
+      todayEventCount: mockStore.events.filter((e) => daysAgo(e.occurredAt) === 0).length,
+    };
   },
   async get(id) {
     await sleep();
