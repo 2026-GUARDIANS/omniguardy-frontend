@@ -70,7 +70,7 @@ export type SignupInput = {
   name: string;
   email: string;
   password: string;
-  /** 하이픈 포함 형식(010-1234-5678) */
+  /** 숫자만(01012345678) */
   phone: string;
 };
 

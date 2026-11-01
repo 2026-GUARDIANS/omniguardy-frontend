@@ -9,6 +9,7 @@ import { ExampleTag } from '../components/ExampleTag';
 import { Icon } from '../components/icons/Icon';
 import { LoadState } from '../components/LoadState';
 import { useApiData } from '../hooks/useApiData';
+import { formatMobilePhone } from '../lib/validation';
 import { TAB_TO_ROUTE } from '../navigation/tabs';
 import type { RootScreenProps } from '../navigation/types';
 import { useAuth } from '../state/AuthContext';
@@ -59,7 +60,7 @@ export function ProfileScreen({ navigation }: RootScreenProps<'Profile'>) {
 
         <View style={styles.card}>
           <InfoRow label="이메일" value={user?.email ?? '—'} divider />
-          <InfoRow label="연락처" value={user?.phone ?? '—'} />
+          <InfoRow label="연락처" value={user?.phone ? formatMobilePhone(user.phone) : '—'} />
         </View>
 
         <View style={styles.card}>
