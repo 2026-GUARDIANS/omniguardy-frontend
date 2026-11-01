@@ -49,7 +49,7 @@ export function EventDetailScreen({ navigation, route }: RootScreenProps<'EventD
         <LoadState loading={loading} error={error} onRetry={reload} hasData={!!event} />
         {event ? (
           <>
-            <VideoClipArea videoUrl={video.data ?? event.videoUrl} />
+            <VideoClipArea videoUrl={video.data ?? event.videoUrl} loading={video.loading} onReload={video.reload} />
 
             <View style={styles.titleRow}>
               <View style={styles.titleCol}>

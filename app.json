@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "omniguardy-frontend",
+    "name": "OmniGuardy",
     "slug": "omniguardy-frontend",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -21,6 +21,12 @@
       "expo-status-bar",
       "expo-splash-screen",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e9032c19-1b5e-4ddf-8553-7ba054c758ad"
+      }
+    },
+    "owner": "sunbi"
   }
 }

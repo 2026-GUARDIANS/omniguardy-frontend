@@ -1,0 +1,21 @@
+{
+  "cli": {
+    "version": ">= 16.27.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "device-test": {
+      "distribution": "internal",
+      "environment": "preview",
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_USE_MOCK": "false",
+        "EXPO_PUBLIC_THEME": "figma",
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.omniguardy.cloud"
+      }
+    }
+  }
+}

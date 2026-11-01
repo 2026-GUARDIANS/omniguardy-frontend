@@ -90,6 +90,10 @@ const figmaColors = {
   dateTagText: '#5E5F50', // = onParchment
   avatarBorder: '#F2E8D5', // = parchment
   bracket: '#A5A696', // 영상 영역 모서리 브래킷 (Figma 원본)
+  // 영상 재생 중(Figma에 없는 상태): 영상 원본 색이 보이도록 검은 바탕, 위 글자는 흰색(대비 21:1 / 오버레이 위 15:1 이상)
+  videoBg: '#000000',
+  videoOverlay: 'rgba(0,0,0,0.55)',
+  onVideo: '#FFFFFF',
   tape: 'rgba(242,232,213,0.28)', // 상세 Agent 카드 위 마스킹 테이프
   exampleTagBg: '#F2E8D5', // = parchment
   exampleTagBorder: 'transparent',
@@ -173,6 +177,9 @@ const customColors: ColorTokens = {
   dateTagText: v2.textSecondary,
   avatarBorder: v2.line,
   bracket: v2.line,
+  videoBg: '#000000',
+  videoOverlay: 'rgba(0,0,0,0.55)',
+  onVideo: '#FFFFFF',
   tape: v2.bg,
   exampleTagBg: v2.surface,
   exampleTagBorder: v2.line,
