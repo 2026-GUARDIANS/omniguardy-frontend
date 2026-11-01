@@ -22,6 +22,19 @@
       "env": {
         "EXPO_PUBLIC_THEME": "custom"
       }
+    },
+    "demo-custom": {
+      "distribution": "internal",
+      "environment": "preview",
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "APP_VARIANT": "demo",
+        "EXPO_PUBLIC_USE_MOCK": "true",
+        "EXPO_PUBLIC_THEME": "custom"
+      }
     }
   }
 }
