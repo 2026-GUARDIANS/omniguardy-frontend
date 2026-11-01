@@ -4,6 +4,7 @@
     "slug": "omniguardy-frontend",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
@@ -11,7 +12,8 @@
     "android": {
       "package": "cloud.omniguardy.app",
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#717171"
       },
       "predictiveBackGestureEnabled": false
     },
