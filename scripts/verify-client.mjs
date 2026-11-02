@@ -1,18 +1,7 @@
 // HTTP 클라이언트(src/api/http/client.ts) 검증: 가짜 fetch로 토큰 재발급·세션 만료·오류 처리 흐름을 확인한다.
 // 사용: npm run test:client
 import assert from 'node:assert/strict';
-import { register } from 'node:module';
-
-// 앱 코드는 Metro 방식대로 확장자 없이 import한다('../config'). Node에서도 찾도록 .ts를 붙여 해석하는 훅
-register(
-  'data:text/javascript,' +
-    encodeURIComponent(
-      `export async function resolve(s, c, next) {
-        try { return await next(s, c); }
-        catch (e) { if (s.startsWith('.') && !/\\.[a-z]+$/i.test(s)) return next(s + '.ts', c); throw e; }
-      }`,
-    ),
-);
+// 확장자 없는 import 해석은 scripts/ts-resolve.mjs(npm run test:client가 --import로 불러옴)
 
 process.env.EXPO_PUBLIC_API_BASE_URL = 'https://api.test';
 const client = await import('../src/api/http/client.ts');

@@ -4,14 +4,15 @@
 //  - 실존처럼 보이는 이름·연락처·수치를 만들지 않습니다.
 //  - 날짜·시각은 호출 시점(현재 시각) 기준으로 생성합니다.
 // ====================================================================
+import { TITLE_BY_VISION_EVENT } from '../eventTitles';
 import type { AgentJudgement, RiskLevel, SecurityEvent } from '../types';
 
-/** 전시용 규칙의 이벤트 제목 */
+/** 전시용 규칙의 이벤트 제목(실제 서버 변환과 같은 표) */
 export const EXAMPLE_EVENT_TITLES = {
-  loitering: { title: '현관 앞 체류 관찰', risk: 'LOW' },
-  cameraCovered: { title: '카메라 가림 의심', risk: 'MEDIUM' },
-  emergencyGesture: { title: '비상 손동작', risk: 'HIGH' },
-  rearApproach: { title: '후방 접근 의심', risk: 'HIGH' },
+  loitering: { title: TITLE_BY_VISION_EVENT.PERSON_DWELL_OBSERVED, risk: 'LOW' },
+  cameraCovered: { title: TITLE_BY_VISION_EVENT.CAMERA_OCCLUSION_SUSPECTED, risk: 'MEDIUM' },
+  emergencyGesture: { title: TITLE_BY_VISION_EVENT.SILENT_SIGNAL, risk: 'HIGH' },
+  rearApproach: { title: TITLE_BY_VISION_EVENT.REAR_CLOSE_APPROACH_SUSPECTED, risk: 'HIGH' },
 } as const satisfies Record<string, { title: string; risk: RiskLevel }>;
 
 type ExampleKey = keyof typeof EXAMPLE_EVENT_TITLES;

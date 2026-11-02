@@ -46,7 +46,7 @@ const swaggerExample = {
   createdAt: '2026-10-29T20:10:15',
   updatedAt: '2026-10-29T20:10:20',
 };
-const pending = { ...swaggerExample, eventId: 'evt-2', status: 'CAMERA_REQUESTED', riskLevel: null, riskScore: null, agentReason: null };
+const pending = { ...swaggerExample, eventId: 'evt-2', status: 'CAMERA_REQUESTED', riskLevel: null, riskScore: null, agentReason: null, visionEvents: null };
 
 ok('Swagger 예시 → 앱 이벤트', () => {
   const e = toSecurityEvent(swaggerExample);
@@ -54,7 +54,8 @@ ok('Swagger 예시 → 앱 이벤트', () => {
   assert.equal(e.risk, 'HIGH');
   assert.equal(e.status, 'COMPLETED'); // 위험도가 있으면 판정 완료(예시의 "ANALYZED"는 실제 상태값이 아님)
   assert.equal(e.occurredAt, '2026-10-29T20:10:15+09:00'); // triggeredAt 우선
-  assert.equal(e.title, '문 앞 배회 행동이 감지되었습니다.'); // 제목 대응표 확정 전: 판단 근거 문장
+  assert.equal(e.title, '현관 앞 체류 관찰'); // visionEvents PERSON_DWELL_OBSERVED → 한글 제목
+  assert.equal(e.agentJudgement.reason, '문 앞 배회 행동이 감지되었습니다.'); // 판단 근거는 상세에만
   assert.equal(e.videoUrl, null);
   assert.deepEqual(e.agentJudgement, { risk: 'HIGH', action: '모바일 알림 + 경고 출력', reason: '문 앞 배회 행동이 감지되었습니다.' });
 });
@@ -88,6 +89,19 @@ ok('visionEvents 파싱(잘못된 JSON은 빈 목록)', () => {
 ok('로그인 응답 → 세션', () => {
   const s = toSession({ accessToken: 't', tokenType: 'Bearer', userId: 17, email: 'guard@example.com', name: '김가디' });
   assert.deepEqual(s, { accessToken: 't', user: { name: '김가디', email: 'guard@example.com', phone: null } });
+});
+ok('이벤트 제목: 한글 대응표 우선순위, 판단 근거 문장은 제목으로 쓰지 않음', () => {
+  const title = (visionEvents, extra = {}) => toSecurityEvent({ ...swaggerExample, visionEvents, ...extra }).title;
+  assert.equal(title('[{"eventType":"SILENT_SIGNAL"}]'), '비상 손동작');
+  assert.equal(title('[{"eventType":"REAR_CLOSE_APPROACH_SUSPECTED"}]'), '후방 접근 의심');
+  assert.equal(title('[{"eventType":"CAMERA_OCCLUSION_SUSPECTED"}]'), '카메라 가림 의심');
+  // 여러 종류면 위험도가 높은 쪽(가림 > 체류), 순서와 상관없이
+  assert.equal(title('[{"eventType":"PERSON_DWELL_OBSERVED"},{"eventType":"CAMERA_OCCLUSION_SUSPECTED"}]'), '카메라 가림 의심');
+  assert.equal(title('[{"eventType":"silent_signal"}]'), '비상 손동작'); // 대소문자 무관
+  // 대응표에 없거나 visionEvents가 없으면(temporal_trial6 A18/A21 등) agentReason이 아니라 기본 문구
+  assert.equal(title('[{"eventType":"UNKNOWN"}]'), '보안 이벤트');
+  assert.equal(title(null), '보안 이벤트');
+  assert.equal(title(null, { riskLevel: null, status: 'FAILED' }), '분석에 실패한 보안 이벤트');
 });
 ok('내 정보(/api/users/me) → 사용자', () => {
   assert.deepEqual(toUser({ name: '김가디', email: 'guard@example.com', phoneNumber: '010-1234-5678' }), {

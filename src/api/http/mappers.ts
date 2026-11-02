@@ -1,4 +1,5 @@
 // 서버 DTO → 앱 타입 변환. React Native 의존성이 없는 순수 함수(scripts/verify-mappers.mjs에서 직접 검증).
+import { titleForVisionEvents } from '../eventTitles';
 import type { EventStatus, HomeSummary, RiskLevel, SecurityEvent, Session, User } from '../types';
 import type { AuthSessionDataDto, CurrentUserDto, HomeSummaryDto, SecurityEventDto, SecurityPushDataDto } from './dto';
 
@@ -26,13 +27,6 @@ const ACTION_BY_RISK: Record<RiskLevel, string> = {
   CRITICAL: '모바일 알림 + 사이렌 출력',
 };
 
-/**
- * TODO(사용자 결정 대기): 화면 제목 대응표. 키는 visionEvents[].eventType.
- * 백엔드 판정 규칙(AnalyzeAgentRiskUseCase)에 쓰이는 값: SILENT_SIGNAL, REAR_CLOSE_APPROACH_SUSPECTED,
- * CAMERA_OCCLUSION_SUSPECTED, PERSON_DWELL_OBSERVED. 확정되면 여기에 채운다. 비어 있으면 아래 임시 제목을 쓴다.
- */
-export const EVENT_TITLE_BY_VISION_EVENT: Readonly<Record<string, string>> = {};
-
 export function parseVisionEventTypes(json: string | null | undefined): string[] {
   if (!json) return [];
   try {
@@ -52,14 +46,12 @@ const FALLBACK_TITLE: Record<EventStatus, string> = {
   COMPLETED: '보안 이벤트',
 };
 
-/** 제목: 대응표 → (임시) 판단 근거 문장 → 상태별 기본 문구 */
-export function toEventTitle(dto: Pick<SecurityEventDto, 'visionEvents' | 'agentReason'>, status: EventStatus): string {
-  for (const type of parseVisionEventTypes(dto.visionEvents)) {
-    const title = EVENT_TITLE_BY_VISION_EVENT[type];
-    if (title) return title;
-  }
-  const reason = dto.agentReason?.trim();
-  return reason || FALLBACK_TITLE[status];
+/**
+ * 제목: 한글 대응표(eventTitles.ts) → 상태별 기본 문구.
+ * 판단 근거 문장(agentReason)은 AI가 쓴 긴 문장이라 제목으로 쓰지 않고 상세의 "판단 근거"에만 보여준다.
+ */
+export function toEventTitle(dto: Pick<SecurityEventDto, 'visionEvents'>, status: EventStatus): string {
+  return titleForVisionEvents(parseVisionEventTypes(dto.visionEvents)) ?? FALLBACK_TITLE[status];
 }
 
 export function toSecurityEvent(dto: SecurityEventDto): SecurityEvent {
