@@ -1,0 +1,10 @@
+{
+  "description": "This web application monitors audio for potential threats, captures video evidence, and notifies users of security events, enhancing safety and response efficiency.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

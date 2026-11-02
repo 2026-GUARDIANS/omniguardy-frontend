@@ -1,0 +1,150 @@
+// 서버 DTO → 앱 타입 변환. React Native 의존성이 없는 순수 함수(scripts/verify-mappers.mjs에서 직접 검증).
+import { hasFinalConsonant } from '../../lib/format';
+import { knownVisionEvents, PHRASE_BY_VISION_EVENT, titleForVisionEvents } from '../eventTitles';
+import type { EventStatus, HomeSummary, RiskLevel, SecurityEvent, Session, User } from '../types';
+import type { AuthSessionDataDto, CurrentUserDto, HomeSummaryDto, SecurityEventDto, SecurityPushDataDto } from './dto';
+
+const RISK_VALUES: readonly RiskLevel[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+
+export function toRiskLevel(value: string | null | undefined): RiskLevel | null {
+  const upper = value?.trim().toUpperCase();
+  return (RISK_VALUES as readonly string[]).includes(upper ?? '') ? (upper as RiskLevel) : null;
+}
+
+/** 서버 status → 화면 상태. 위험도가 있으면 판정이 끝난 것으로 본다 */
+export function toEventStatus(status: string | null | undefined, risk: RiskLevel | null): EventStatus {
+  if (risk) return 'COMPLETED';
+  const s = status?.trim().toUpperCase();
+  if (s === 'COMPLETED') return 'COMPLETED';
+  if (s === 'FAILED') return 'FAILED';
+  return 'ANALYZING'; // AUDIO_DETECTED, CAMERA_REQUESTED, VISION_ANALYZED, 알 수 없는 값
+}
+
+/** 대응 문구. 서버 필드가 없어 백엔드 RiskResponseService 규칙을 그대로 옮긴다 */
+const ACTION_BY_RISK: Record<RiskLevel, string> = {
+  LOW: '이벤트 기록만 저장',
+  MEDIUM: '모바일 알림 전송',
+  HIGH: '모바일 알림 + 경고 출력',
+  CRITICAL: '모바일 알림 + 사이렌 출력',
+};
+
+export function parseVisionEventTypes(json: string | null | undefined): string[] {
+  if (!json) return [];
+  try {
+    const parsed: unknown = JSON.parse(json);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((e) => (e && typeof e === 'object' && 'eventType' in e ? String((e as { eventType: unknown }).eventType) : ''))
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+const FALLBACK_TITLE: Record<EventStatus, string> = {
+  ANALYZING: '분석 중인 보안 이벤트',
+  FAILED: '분석에 실패한 보안 이벤트',
+  COMPLETED: '보안 이벤트',
+};
+
+/**
+ * 제목: 한글 대응표(eventTitles.ts) → 상태별 기본 문구.
+ * 판단 근거 문장(agentReason)은 AI가 쓴 긴 문장이라 제목으로 쓰지 않고 상세의 "판단 근거"에만 보여준다.
+ */
+export function toEventTitle(dto: Pick<SecurityEventDto, 'visionEvents'>, status: EventStatus): string {
+  return titleForVisionEvents(parseVisionEventTypes(dto.visionEvents)) ?? FALLBACK_TITLE[status];
+}
+
+/** 소리 종류(백엔드 AudioEventType) */
+const AUDIO_PHRASE: Readonly<Record<string, string>> = {
+  KNOCK: '노크 소리',
+  HANDLE: '문손잡이 소리',
+  BACKGROUND: '주변 소리',
+};
+
+/** "A, B와 C"처럼 잇는다(조사는 마지막 앞 단어의 받침에 맞춤) */
+function joinKorean(words: readonly string[]): string {
+  if (words.length <= 1) return words[0] ?? '';
+  const head = words.slice(0, -1);
+  const last = head[head.length - 1];
+  return `${head.join(', ')}${hasFinalConsonant(last) ? '과' : '와'} ${words[words.length - 1]}`;
+}
+
+/**
+ * 판단 근거(사용자용 문장). AI가 쓴 agentReason은 분석 로그 형식이라 화면에 쓰지 않고,
+ * 응답의 정리된 값(트리거·소리 종류·영상 이벤트 종류)으로 문장을 만든다. 횟수·인원·확률은 넣지 않는다(사용자 결정).
+ */
+export function toJudgementReason(dto: Pick<SecurityEventDto, 'triggerType' | 'audioEventType' | 'visionEvents'>): string {
+  const phrases = knownVisionEvents(parseVisionEventTypes(dto.visionEvents)).map((t) => PHRASE_BY_VISION_EVENT[t]);
+  const seen = phrases.length ? joinKorean(phrases) : null;
+  const observed = seen ? `${seen}${hasFinalConsonant(seen) ? '이' : '가'} 관찰되었습니다.` : null;
+
+  if (dto.triggerType === 'KEYPAD') {
+    return observed ? `키패드 입력 후 촬영한 영상에서 ${observed}` : '키패드 입력이 감지되었습니다.';
+  }
+  if (dto.triggerType === 'AUDIO') {
+    const sound = (dto.audioEventType && AUDIO_PHRASE[dto.audioEventType]) || '소리';
+    const particle = hasFinalConsonant(sound) ? '이' : '가';
+    return observed ? `현관에서 ${sound}${particle} 감지된 뒤, ${observed}` : `현관에서 ${sound}${particle} 감지되었습니다.`;
+  }
+  return observed ?? '';
+}
+
+export function toSecurityEvent(dto: SecurityEventDto): SecurityEvent {
+  const risk = toRiskLevel(dto.riskLevel);
+  const status = toEventStatus(dto.status, risk);
+  return {
+    id: dto.eventId,
+    title: toEventTitle(dto, status),
+    risk,
+    status,
+    // triggeredAt(시간대 포함)을 우선. createdAt은 시간대가 없어 기기 현지 시각으로 해석된다
+    occurredAt: dto.triggeredAt ?? dto.createdAt ?? new Date(0).toISOString(),
+    videoUrl: null,
+    agentJudgement: {
+      risk,
+      action: risk ? ACTION_BY_RISK[risk] : '',
+      // 위험도 판정 전(분석 중·실패)에는 판단 근거가 없다
+      reason: risk ? toJudgementReason(dto) : '',
+    },
+  };
+}
+
+/** 로그인·회원가입 응답에는 연락처가 없다. 회원가입은 입력값을 쓰고, 그 외에는 getMe(/api/users/me)로 채운다 */
+export function toSession(data: AuthSessionDataDto, phone: string | null = null): Session {
+  return { accessToken: data.accessToken, user: { name: data.name, email: data.email, phone } };
+}
+
+/** 현재 백엔드의 숫자 등급(RiskResponseService). HIGH·CRITICAL이 모두 3이라 3은 HIGH로 본다 */
+const RISK_BY_PUSH_NUMBER: Readonly<Record<string, RiskLevel>> = { '2': 'MEDIUM', '3': 'HIGH' };
+
+/** FCM 데이터의 riskLevel → 앱 위험도. 숫자 문자열("2","3")과 enum 이름(MEDIUM/HIGH/CRITICAL) 둘 다 받는다 */
+export function toPushRiskLevel(value: unknown): RiskLevel | null {
+  if (typeof value === 'number') value = String(value);
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return RISK_BY_PUSH_NUMBER[trimmed] ?? toRiskLevel(trimmed);
+}
+
+export type SecurityPush = { risk: RiskLevel | null; eventId: string | null };
+
+/** 보안 이벤트 푸시가 아니면 null. eventId는 백엔드가 아직 보내지 않아 없을 수 있다 */
+export function parseSecurityPush(raw: unknown): SecurityPush | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw as SecurityPushDataDto;
+  if (data.type !== 'SECURITY_EVENT') return null;
+  const eventId = typeof data.eventId === 'string' && data.eventId.trim() ? data.eventId.trim() : null;
+  return { risk: toPushRiskLevel(data.riskLevel), eventId };
+}
+
+export function toUser(dto: CurrentUserDto): User {
+  return { name: dto.name, email: dto.email, phone: dto.phoneNumber?.trim() || null };
+}
+
+export function toHomeSummary(dto: HomeSummaryDto): HomeSummary {
+  return {
+    latestRisk: toRiskLevel(dto.securityStatus),
+    lastDetectedAt: dto.lastDetectedAt,
+    todayEventCount: dto.todayEventCount ?? 0,
+  };
+}

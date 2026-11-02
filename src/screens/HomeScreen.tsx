@@ -1,0 +1,201 @@
+import React from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { api, type SecurityEvent } from '../api';
+import { TAB_BAR_SPACE } from '../components/BottomTabBar';
+import { DevAlertButton, DevThemeLabel } from '../components/DevAlertButton';
+import { EventRow } from '../components/EventRow';
+import { Icon } from '../components/icons/Icon';
+import { LoadState } from '../components/LoadState';
+import { MixedText } from '../components/MixedText';
+import { RiskBadge, RiskDot } from '../components/Risk';
+import { useApiData } from '../hooks/useApiData';
+import { daysAgo, detectedSentence, formatDateTime, formatTime } from '../lib/format';
+import type { TabScreenProps } from '../navigation/types';
+import { useRealtimeAlert } from '../state/RealtimeAlertContext';
+import { colors, fontSize, fonts, hitSlopFor, radius, riskColors, shadow, size, spacing, themeFlags } from '../theme/tokens';
+import { type } from '../theme/typography';
+
+// 홈 최근 이벤트 개수. Figma는 2개, 사용자 결정으로 5개
+const RECENT_COUNT = 5;
+
+// Figma 1:285 홈 화면. Figma의 "장치 연결" 영역은 뺐다(사용자 결정)
+export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
+  const { activeAlert, eventsVersion } = useRealtimeAlert();
+  const events = useApiData(() => api.events.list(), [eventsVersion]);
+  // 마지막 감지·오늘 이벤트 수는 GET /api/home/summary(서버가 전체 기록 기준으로 계산)
+  const summary = useApiData(() => api.events.getHomeSummary(), [eventsVersion]);
+
+  const list = events.data ?? [];
+  // 현재 상태: 가장 최근 이벤트의 제목(사용자 결정). 이벤트가 없으면 "이상 없음", 불러오기 전에는 "—"
+  const statusText = events.data ? (list[0]?.title ?? '이상 없음') : '—';
+  const lastDetectedAt = summary.data?.lastDetectedAt ?? null;
+  const openEvent = (e: SecurityEvent) => navigation.navigate('EventDetail', { eventId: e.id });
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <View style={[styles.header, themeFlags.homeProfileAtEdge && styles.headerSpread]}>
+        <Text accessibilityRole="header" style={type.pageTitleDecorative}>
+          OmniGuardy
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="프로필"
+          onPress={() => navigation.navigate('Profile')}
+          hitSlop={hitSlopFor(size.iconButton, size.iconButton)}
+          style={({ pressed }) => [styles.profileBtn, pressed && { opacity: 0.85 }]}
+        >
+          <Icon name="user20" />
+        </Pressable>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* 현재 상태 */}
+        <View style={styles.statusCard}>
+          <View style={styles.between}>
+            <Text style={styles.statusCaption}>현재 상태</Text>
+            <View style={styles.statusIcon}>
+              <Icon name="shieldCheck" />
+            </View>
+          </View>
+          <Text style={styles.statusText} accessibilityLiveRegion="polite">
+            {statusText}
+          </Text>
+          <View style={styles.divider} />
+          <Text style={styles.statusMeta}>
+            마지막 감지:{' '}
+            <Text style={styles.statusMetaValue}>
+              {lastDetectedAt ? (daysAgo(lastDetectedAt) === 0 ? formatTime(lastDetectedAt) : formatDateTime(lastDetectedAt)) : '—'}
+            </Text>
+            {' · 오늘 이벤트 '}
+            <Text style={styles.statusMetaValue}>{summary.data ? summary.data.todayEventCount : '—'}</Text>건
+          </Text>
+        </View>
+
+        {/* 처리하지 않은 HIGH 위험 알림 */}
+        {activeAlert ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`위험도 ${activeAlert.risk ?? 'HIGH'} 위험 알림. ${detectedSentence(activeAlert.title)}`}
+            accessibilityHint="알림 화면을 엽니다"
+            onPress={() => navigation.navigate('Alert', { eventId: activeAlert.id })}
+            style={({ pressed }) => [styles.alertCard, pressed && { opacity: 0.85 }]}
+          >
+            <RiskDot risk={activeAlert.risk ?? 'HIGH'} />
+            <View style={styles.alertBody}>
+              <MixedText style={styles.alertCaption} weight="semibold">
+                {`${activeAlert.risk ?? 'HIGH'} · 위험 알림`}
+              </MixedText>
+              <Text style={styles.alertTitle}>{detectedSentence(activeAlert.title)}</Text>
+              <Text style={styles.alertHint}>탭하여 알림 화면 보기 →</Text>
+            </View>
+            <RiskBadge risk={activeAlert.risk ?? 'HIGH'} />
+          </Pressable>
+        ) : null}
+
+        {/* 최근 이벤트 */}
+        <View style={styles.sectionRecent}>
+          <View style={[styles.sectionHeader, styles.between]}>
+            <Text accessibilityRole="header" style={type.sectionTitle}>
+              최근 이벤트
+            </Text>
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel="이벤트 전체 보기"
+              onPress={() => navigation.navigate('Events')}
+              style={styles.moreLink}
+            >
+              <Text style={type.link}>전체 보기</Text>
+            </Pressable>
+          </View>
+          <LoadState
+            loading={events.loading}
+            error={events.error}
+            onRetry={events.reload}
+            hasData={!!events.data}
+            isEmpty={list.length === 0}
+            emptyText="최근 이벤트가 없습니다."
+          />
+          <View style={styles.recentList}>
+            {list.slice(0, RECENT_COUNT).map((e) => (
+              <EventRow key={e.id} event={e} variant="home" onPress={() => openEvent(e)} />
+            ))}
+          </View>
+        </View>
+
+        <DevAlertButton />
+        <DevThemeLabel />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 22,
+    paddingTop: 16,
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+  },
+  // custom: 제목은 왼쪽, 프로필 버튼은 오른쪽 끝. 오른쪽 여백은 아래 카드들과 같은 16
+  headerSpread: { justifyContent: 'space-between', paddingRight: spacing.xxl },
+  profileBtn: {
+    width: size.iconButton,
+    height: size.iconButton,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  content: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: TAB_BAR_SPACE, gap: 14 },
+  between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+
+  statusCard: {
+    backgroundColor: colors.statusCardBg,
+    borderWidth: 1,
+    borderColor: colors.statusCardBorder,
+    borderRadius: radius.card,
+    padding: 18,
+    gap: 10,
+    ...shadow.cardLg,
+  },
+  statusCaption: { fontFamily: fonts.monoKoRegular, fontSize: fontSize.xxs, color: colors.statusCaption },
+  statusIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.statusIconBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusText: { fontFamily: fonts.sansBold, fontSize: fontSize.display, lineHeight: 36, color: colors.statusText },
+  divider: { height: 1, backgroundColor: colors.statusDivider },
+  statusMeta: { fontFamily: fonts.sansRegular, fontSize: fontSize.sm, color: colors.statusMeta },
+  statusMetaValue: { fontFamily: fonts.monoRegular, color: colors.statusMetaValue },
+
+  alertCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.cardSm,
+    ...shadow.cardMd,
+  },
+  alertBody: { flex: 1, gap: 3 },
+  // figma: 원본 rgba(144,19,24,0.5) → 조정 #901318 (대비 2.6:1 → 9.2:1) / custom: HIGH #C0392B (5.44:1)
+  alertCaption: { fontFamily: fonts.monoSemiBold, fontSize: fontSize.xxs, color: riskColors.HIGH.dot },
+  alertTitle: { fontFamily: fonts.sansBold, fontSize: fontSize.lg, color: colors.textTitle },
+  alertHint: { fontFamily: fonts.sansRegular, fontSize: fontSize.sm, color: colors.link },
+
+  sectionRecent: { gap: 6 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 },
+  moreLink: { minHeight: size.minTouch, justifyContent: 'center', paddingLeft: 8 },
+  recentList: { gap: 8 },
+});
