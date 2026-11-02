@@ -13,6 +13,7 @@ type Subscription = { remove(): void };
 /**
  * 실시간 알림 — FCM 푸시 방식(백엔드 FirebasePushAdapter).
  * 1) 로그인 후 connect(): 알림 권한 요청 → FCM 디바이스 토큰 발급 → POST /api/device-tokens 등록
+ *    앱을 다시 켜면(로그인 유지 복원) 다시 connect()되어 매번 등록하고, FCM 토큰이 바뀌면 바뀐 토큰도 등록한다
  * 2) 푸시 수신(앱 실행 중) 또는 알림 탭(백그라운드·종료 상태):
  *    - data.eventId가 있으면 GET /api/security-events/{eventId}로 그 이벤트를 전달한다(알림 탭이면 openDetail).
  *    - 없으면(현재 백엔드) 최신 목록에서 대체: HIGH 이상 푸시는 가장 최근 HIGH 이상 이벤트,
@@ -96,17 +97,32 @@ export class FcmRealtimeService implements RealtimeService {
         this.onPush(last.notification.request.content.data, true);
       }
 
+      // FCM이 토큰을 새로 발급하면(앱 데이터 삭제·복원, Firebase 쪽 갱신 등) 바뀐 토큰을 다시 등록한다
+      this.subscriptions.push(
+        Notifications.addPushTokenListener((t) => {
+          if (!this.active) return;
+          this.registerToken(t.data).catch((e) =>
+            console.warn('바뀐 FCM 토큰 등록 실패:', e instanceof Error ? e.message : e),
+          );
+        }),
+      );
+
       const token = await Notifications.getDevicePushTokenAsync(); // Android: FCM 토큰
-      const body: DeviceTokenSaveRequestDto = {
-        token: String(token.data),
-        deviceType: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
-      };
-      await request('/api/device-tokens', { method: 'POST', body }); // 201
+      await this.registerToken(token.data);
       if (this.active) this.setStatus('connected');
     } catch (e) {
       console.warn('실시간 알림(FCM) 연결 실패:', e instanceof Error ? e.message : e);
       if (this.active) this.setStatus('disconnected');
     }
+  }
+
+  /** POST /api/device-tokens (201). 로그인한 Access Token은 request()가 Authorization 헤더로 붙인다 */
+  private async registerToken(token: unknown) {
+    const body: DeviceTokenSaveRequestDto = {
+      token: String(token),
+      deviceType: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
+    };
+    await request('/api/device-tokens', { method: 'POST', body });
   }
 
   /** opened: 사용자가 알림을 눌러 들어온 경우(백그라운드·종료 상태 포함) */
