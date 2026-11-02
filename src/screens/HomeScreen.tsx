@@ -17,7 +17,8 @@ import { useRealtimeAlert } from '../state/RealtimeAlertContext';
 import { colors, fontSize, fonts, hitSlopFor, radius, riskColors, shadow, size, spacing, themeFlags } from '../theme/tokens';
 import { type } from '../theme/typography';
 
-const RECENT_COUNT = 2;
+// 홈 최근 이벤트 개수. Figma는 2개, 사용자 결정으로 5개
+const RECENT_COUNT = 5;
 
 // Figma 1:285 홈 화면. Figma의 "장치 연결" 영역은 뺐다(사용자 결정)
 export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
