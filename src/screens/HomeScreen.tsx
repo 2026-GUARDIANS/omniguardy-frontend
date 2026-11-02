@@ -27,6 +27,8 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
   const summary = useApiData(() => api.events.getHomeSummary(), [eventsVersion]);
 
   const list = events.data ?? [];
+  // 현재 상태: 가장 최근 이벤트의 제목(사용자 결정). 이벤트가 없으면 "이상 없음", 불러오기 전에는 "—"
+  const statusText = events.data ? (list[0]?.title ?? '이상 없음') : '—';
   const lastDetectedAt = summary.data?.lastDetectedAt ?? null;
   const openEvent = (e: SecurityEvent) => navigation.navigate('EventDetail', { eventId: e.id });
 
@@ -57,7 +59,7 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
             </View>
           </View>
           <Text style={styles.statusText} accessibilityLiveRegion="polite">
-            {activeAlert ? '확인 필요' : '이상 없음'}
+            {statusText}
           </Text>
           <View style={styles.divider} />
           <Text style={styles.statusMeta}>

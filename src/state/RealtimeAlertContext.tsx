@@ -10,8 +10,6 @@ type RealtimeAlertState = {
   activeAlert: SecurityEvent | null;
   /** 실시간 수신으로 이벤트 목록이 바뀔 때마다 증가 → 목록 화면이 다시 불러온다 */
   eventsVersion: number;
-  /** "경고 끄기" */
-  stopWarning(): Promise<void>;
   /** 알림을 확인 처리(상세 화면 "확인 완료") */
   clearAlert(eventId: string): void;
 };
@@ -48,17 +46,13 @@ export function RealtimeAlertProvider({ children }: { children: React.ReactNode 
     };
   }, [user]);
 
-  const stopWarning = useCallback(async () => {
-    await api.devices.stopWarning();
-  }, []);
-
   const clearAlert = useCallback((eventId: string) => {
     setActiveAlert((cur) => (cur?.id === eventId ? null : cur));
   }, []);
 
   const value = useMemo(
-    () => ({ status, activeAlert, eventsVersion, stopWarning, clearAlert }),
-    [status, activeAlert, eventsVersion, stopWarning, clearAlert],
+    () => ({ status, activeAlert, eventsVersion, clearAlert }),
+    [status, activeAlert, eventsVersion, clearAlert],
   );
   return <RealtimeAlertContext.Provider value={value}>{children}</RealtimeAlertContext.Provider>;
 }

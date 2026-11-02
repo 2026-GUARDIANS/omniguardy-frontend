@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,25 +17,14 @@ import { colors, fontSize, fonts, radius, shadow, THEME, themeFlags } from '../t
 // Figma 1:399 사일런트 시그널 알림 화면 (HIGH 위험 알림)
 export function AlertScreen({ navigation, route }: RootScreenProps<'Alert'>) {
   const { eventId } = route.params;
-  const { activeAlert, stopWarning } = useRealtimeAlert();
+  const { activeAlert } = useRealtimeAlert();
   const fetched = useApiData(() => api.events.get(eventId), [eventId]);
   // 실시간으로 받은 이벤트가 있으면 조회를 기다리지 않고 바로 표시
   const event = fetched.data ?? (activeAlert?.id === eventId ? activeAlert : null);
-  const [warning, setWarning] = useState(true);
-  const [stopping, setStopping] = useState(false);
-  const [stopError, setStopError] = useState<string | null>(null);
-
-  const onStop = async () => {
-    setStopping(true);
-    setStopError(null);
-    try {
-      await stopWarning();
-      setWarning(false);
-      navigation.goBack();
-    } catch (e) {
-      setStopError(e instanceof Error ? e.message : '경고를 끄지 못했습니다.');
-      setStopping(false);
-    }
+  // "경고 끄기": 서버 요청 없이 이 화면만 닫는다(사용자 결정). 앱을 알림으로 처음 연 경우처럼 돌아갈 화면이 없으면 홈으로
+  const onStop = () => {
+    if (navigation.canGoBack()) navigation.goBack();
+    else navigation.replace('Main', { screen: 'Home' });
   };
 
   return (
@@ -68,11 +57,9 @@ export function AlertScreen({ navigation, route }: RootScreenProps<'Alert'>) {
             </Text>
             <View style={styles.divider} />
             <MixedText style={styles.meta} weight="medium">{`${formatTime(event.occurredAt)} · 현관`}</MixedText>
-            <View style={[styles.warnPill, !warning && styles.warnPillOff]} accessibilityLiveRegion="polite">
-              <Icon name="speaker" color={warning ? undefined : colors.warnPillOffText} />
-              <Text style={[styles.warnText, !warning && styles.warnTextOff]}>
-                {warning ? '경고 출력 중' : '경고 꺼짐'}
-              </Text>
+            <View style={styles.warnPill}>
+              <Icon name="speaker" />
+              <Text style={styles.warnText}>경고 출력 중</Text>
             </View>
           </>
         ) : (
@@ -81,11 +68,6 @@ export function AlertScreen({ navigation, route }: RootScreenProps<'Alert'>) {
       </View>
 
       <View style={styles.actions}>
-        {stopError ? (
-          <Text style={styles.error} accessibilityLiveRegion="polite">
-            {stopError}
-          </Text>
-        ) : null}
         <PillButton
           label="상세 보기"
           trailingIcon="arrowRight"
@@ -94,7 +76,7 @@ export function AlertScreen({ navigation, route }: RootScreenProps<'Alert'>) {
           disabled={!event}
           onPress={() => navigation.replace('EventDetail', { eventId })}
         />
-        <PillButton label="경고 끄기" variant="secondary" loading={stopping} disabled={!warning} onPress={onStop} />
+        <PillButton label="경고 끄기" variant="secondary" onPress={onStop} />
       </View>
     </SafeAreaView>
   );
@@ -133,10 +115,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: colors.warnPill,
   },
-  warnPillOff: { backgroundColor: colors.warnPillOffBg },
   warnText: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.md, color: colors.textOnPrimary },
-  warnTextOff: { color: colors.warnPillOffText },
 
   actions: { paddingTop: 12, paddingBottom: 36, gap: 10 },
-  error: { fontFamily: fonts.sansRegular, fontSize: fontSize.xs, color: colors.alertError, textAlign: 'center' },
 });

@@ -20,12 +20,6 @@ export function setSessionHooks(hooks: SessionHooks) {
   sessionHooks = hooks;
 }
 
-export class NotImplementedError extends Error {
-  constructor(what: string) {
-    super(`서버 명세에 없는 기능입니다: ${what}`);
-  }
-}
-
 /** 서버 ErrorResponse({ success:false, status, code, message })를 담는 오류 */
 export class ApiError extends Error {
   readonly status: number;

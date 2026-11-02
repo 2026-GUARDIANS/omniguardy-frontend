@@ -50,7 +50,6 @@ class MockRealtimeService implements RealtimeService {
     const event = makeExampleEvent(this.nextHighIsGesture ? 'emergencyGesture' : 'rearApproach', new Date());
     this.nextHighIsGesture = !this.nextHighIsGesture;
     mockStore.events.unshift(event);
-    mockStore.warningActive = true;
     this.listeners.forEach((l) => l({ type: 'event', event }));
   }
 

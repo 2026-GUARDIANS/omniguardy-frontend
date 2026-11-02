@@ -33,11 +33,6 @@ export interface EventApi {
   acknowledge(id: string): Promise<void>;
 }
 
-export interface DeviceApi {
-  /** 알림 화면의 "경고 끄기" */
-  stopWarning(): Promise<void>;
-}
-
 /** 실시간 알림 채널. mock과 실제 FCM 푸시 구현(http/realtime.fcm.ts)이 같은 인터페이스를 따릅니다. */
 export interface RealtimeService {
   connect(): void;
@@ -51,7 +46,6 @@ export interface RealtimeService {
 export type Api = {
   auth: AuthApi;
   events: EventApi;
-  devices: DeviceApi;
   realtime: RealtimeService;
 };
 

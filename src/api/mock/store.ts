@@ -6,10 +6,8 @@ export const mockStore: {
   user: User | null;
   events: SecurityEvent[];
   acknowledged: Set<string>;
-  warningActive: boolean;
 } = {
   user: null,
   events: createExampleEvents(),
   acknowledged: new Set(),
-  warningActive: false,
 };
