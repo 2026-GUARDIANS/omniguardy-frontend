@@ -21,8 +21,6 @@ export function EventDetailScreen({ navigation, route }: RootScreenProps<'EventD
   const { eventId } = route.params;
   const { clearAlert } = useRealtimeAlert();
   const { data: event, loading, error, reload } = useApiData(() => api.events.get(eventId), [eventId]);
-  // 영상 주소는 상세 응답에 없고 따로 받는다(실제 서버: 5분 유효). 화면에 다시 들어올 때마다 새로 받는다
-  const video = useApiData(() => api.events.getVideoUrl(eventId), [eventId]);
   const [acking, setAcking] = useState(false);
   const [ackError, setAckError] = useState<string | null>(null);
 
@@ -49,7 +47,8 @@ export function EventDetailScreen({ navigation, route }: RootScreenProps<'EventD
         <LoadState loading={loading} error={error} onRetry={reload} hasData={!!event} />
         {event ? (
           <>
-            <VideoClipArea videoUrl={video.data ?? event.videoUrl} loading={video.loading} onReload={video.reload} />
+            {/* 영상 주소는 상세 응답에 없고 5분만 유효해서, 재생 버튼을 누를 때마다 새로 받는다 */}
+            <VideoClipArea key={eventId} loadUrl={() => api.events.getVideoUrl(eventId)} />
 
             <View style={styles.titleRow}>
               <View style={styles.titleCol}>
