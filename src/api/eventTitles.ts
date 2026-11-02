@@ -15,11 +15,22 @@ export const TITLE_BY_VISION_EVENT: Readonly<Record<VisionEventType, string>> = 
   VISION_EVENT_TITLES,
 ) as Record<VisionEventType, string>;
 
+/** 판단 근거 문장에 쓰는 이름("○○이/가 관찰되었습니다"). 제목과 같되 체류는 "관찰"을 뺀다 */
+export const PHRASE_BY_VISION_EVENT: Readonly<Record<VisionEventType, string>> = {
+  SILENT_SIGNAL: '비상 손동작',
+  REAR_CLOSE_APPROACH_SUSPECTED: '후방 접근 의심',
+  CAMERA_OCCLUSION_SUSPECTED: '카메라 가림 의심',
+  PERSON_DWELL_OBSERVED: '현관 앞 체류',
+};
+
+/** 대응표에 있는 종류를 우선순위 순서로(중복 제거). 표에 없는 종류는 뺀다 */
+export function knownVisionEvents(types: readonly string[]): VisionEventType[] {
+  const upper = new Set(types.map((t) => t.trim().toUpperCase()));
+  return VISION_EVENT_TITLES.map(([type]) => type).filter((type) => upper.has(type));
+}
+
 /** 대응표에 있는 종류 중 우선순위가 가장 높은 것의 제목. 없으면 null */
 export function titleForVisionEvents(types: readonly string[]): string | null {
-  const upper = new Set(types.map((t) => t.trim().toUpperCase()));
-  for (const [type, title] of VISION_EVENT_TITLES) {
-    if (upper.has(type)) return title;
-  }
-  return null;
+  const [first] = knownVisionEvents(types);
+  return first ? TITLE_BY_VISION_EVENT[first] : null;
 }

@@ -1,5 +1,6 @@
 // 서버 DTO → 앱 타입 변환. React Native 의존성이 없는 순수 함수(scripts/verify-mappers.mjs에서 직접 검증).
-import { titleForVisionEvents } from '../eventTitles';
+import { hasFinalConsonant } from '../../lib/format';
+import { knownVisionEvents, PHRASE_BY_VISION_EVENT, titleForVisionEvents } from '../eventTitles';
 import type { EventStatus, HomeSummary, RiskLevel, SecurityEvent, Session, User } from '../types';
 import type { AuthSessionDataDto, CurrentUserDto, HomeSummaryDto, SecurityEventDto, SecurityPushDataDto } from './dto';
 
@@ -54,6 +55,41 @@ export function toEventTitle(dto: Pick<SecurityEventDto, 'visionEvents'>, status
   return titleForVisionEvents(parseVisionEventTypes(dto.visionEvents)) ?? FALLBACK_TITLE[status];
 }
 
+/** 소리 종류(백엔드 AudioEventType) */
+const AUDIO_PHRASE: Readonly<Record<string, string>> = {
+  KNOCK: '노크 소리',
+  HANDLE: '문손잡이 소리',
+  BACKGROUND: '주변 소리',
+};
+
+/** "A, B와 C"처럼 잇는다(조사는 마지막 앞 단어의 받침에 맞춤) */
+function joinKorean(words: readonly string[]): string {
+  if (words.length <= 1) return words[0] ?? '';
+  const head = words.slice(0, -1);
+  const last = head[head.length - 1];
+  return `${head.join(', ')}${hasFinalConsonant(last) ? '과' : '와'} ${words[words.length - 1]}`;
+}
+
+/**
+ * 판단 근거(사용자용 문장). AI가 쓴 agentReason은 분석 로그 형식이라 화면에 쓰지 않고,
+ * 응답의 정리된 값(트리거·소리 종류·영상 이벤트 종류)으로 문장을 만든다. 횟수·인원·확률은 넣지 않는다(사용자 결정).
+ */
+export function toJudgementReason(dto: Pick<SecurityEventDto, 'triggerType' | 'audioEventType' | 'visionEvents'>): string {
+  const phrases = knownVisionEvents(parseVisionEventTypes(dto.visionEvents)).map((t) => PHRASE_BY_VISION_EVENT[t]);
+  const seen = phrases.length ? joinKorean(phrases) : null;
+  const observed = seen ? `${seen}${hasFinalConsonant(seen) ? '이' : '가'} 관찰되었습니다.` : null;
+
+  if (dto.triggerType === 'KEYPAD') {
+    return observed ? `키패드 입력 후 촬영한 영상에서 ${observed}` : '키패드 입력이 감지되었습니다.';
+  }
+  if (dto.triggerType === 'AUDIO') {
+    const sound = (dto.audioEventType && AUDIO_PHRASE[dto.audioEventType]) || '소리';
+    const particle = hasFinalConsonant(sound) ? '이' : '가';
+    return observed ? `현관에서 ${sound}${particle} 감지된 뒤, ${observed}` : `현관에서 ${sound}${particle} 감지되었습니다.`;
+  }
+  return observed ?? '';
+}
+
 export function toSecurityEvent(dto: SecurityEventDto): SecurityEvent {
   const risk = toRiskLevel(dto.riskLevel);
   const status = toEventStatus(dto.status, risk);
@@ -68,7 +104,8 @@ export function toSecurityEvent(dto: SecurityEventDto): SecurityEvent {
     agentJudgement: {
       risk,
       action: risk ? ACTION_BY_RISK[risk] : '',
-      reason: dto.agentReason?.trim() ?? '',
+      // 위험도 판정 전(분석 중·실패)에는 판단 근거가 없다
+      reason: risk ? toJudgementReason(dto) : '',
     },
   };
 }

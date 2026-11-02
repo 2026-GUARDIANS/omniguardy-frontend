@@ -160,9 +160,10 @@ const styles = StyleSheet.create({
   // 라벨은 줄이지 않는다(긴 판단 근거와 폭을 나눌 때 라벨이 두 줄로 쪼개지던 문제)
   agentLabel: { flexShrink: 0, fontFamily: fonts.sansRegular, fontSize: fontSize.md, color: colors.textSecondary },
   agentAction: { fontFamily: fonts.sansSemiBold, fontSize: fontSize.md, color: colors.textSecondary },
+  // 판단 근거는 여러 줄 문장이라 왼쪽 정렬(사용자 결정)
   agentReason: {
     flex: 1,
-    textAlign: 'right',
+    textAlign: 'left',
     fontFamily: fonts.monoKoMedium,
     fontSize: fontSize.sm,
     color: colors.textMuted,
