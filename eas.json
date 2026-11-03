@@ -23,6 +23,12 @@
         "EXPO_PUBLIC_THEME": "custom"
       }
     },
+    "device-test-polish": {
+      "extends": "device-test",
+      "env": {
+        "EXPO_PUBLIC_THEME": "polish"
+      }
+    },
     "demo-custom": {
       "distribution": "internal",
       "environment": "preview",

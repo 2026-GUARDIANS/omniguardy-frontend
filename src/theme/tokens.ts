@@ -1,15 +1,20 @@
 // 디자인 토큰 — 두 벌의 테마를 둔다.
 //  - 'figma'  : Figma "Untitled" v1 화면 8종 기준(기존 앱 그대로). 기본값.
 //  - 'custom' : Figma "v2 보안앱 톤" 섹션 + 변수 컬렉션 "v2 보안앱 톤" 기준.
+//  - 'polish' : 'figma'의 색을 그대로 쓰고 레이아웃·카드·간격·아이콘·애니메이션만 다듬은 테마.
+//               화면은 src/polish/에 따로 있다. 글꼴은 한글 Plex Sans KR + 숫자·영문 Nunito Sans.
 // 테마는 EXPO_PUBLIC_THEME 환경변수로 "모듈 로드 시점"에 한 번 정해진다(앱 실행 중 전환 없음).
 // 접근성(WCAG AA) 때문에 바꾼 값은 "Figma 원본 → 조정값"을 주석으로 남긴다.
 // 대비 계산 기준: 일반 텍스트 4.5:1, 큰 텍스트(24px+ 또는 18.66px+ Bold)·UI 그래픽 3:1.
 
-export type ThemeName = 'figma' | 'custom';
+export type ThemeName = 'figma' | 'custom' | 'polish';
 
-export const THEME: ThemeName = process.env.EXPO_PUBLIC_THEME === 'custom' ? 'custom' : 'figma';
+const ENV_THEME = process.env.EXPO_PUBLIC_THEME;
+export const THEME: ThemeName = ENV_THEME === 'custom' || ENV_THEME === 'polish' ? ENV_THEME : 'figma';
 
-const pick = <T,>(figma: T, custom: T): T => (THEME === 'custom' ? custom : figma);
+/** 'polish' 값을 생략하면 'figma' 값을 쓴다('figma'·'custom'의 결과는 기존과 같음) */
+const pick = <T,>(figma: T, custom: T, polish: T = figma): T =>
+  THEME === 'polish' ? polish : THEME === 'custom' ? custom : figma;
 
 // ─────────────────────────────────────────────────────────────
 // v2 확정 토큰 (Figma 변수 컬렉션 "v2 보안앱 톤")
@@ -346,7 +351,10 @@ const customFonts: FontTokens = {
   latinLight: 'NunitoSans_300Light',
 };
 
-export const fonts: FontTokens = pick(figmaFonts, customFonts);
+// 'polish': 한글은 Plex Sans KR, 숫자·영문(시각, 건수, HIGH/MEDIUM/LOW)은 Nunito Sans. 'custom'과 같은 조합
+const polishFonts: FontTokens = { ...customFonts };
+
+export const fonts: FontTokens = pick(figmaFonts, customFonts, polishFonts);
 
 /** 한글 글꼴(Plex Sans KR)의 기본 줄 높이 비율 = (hhea 1085 + 415) / 1000. MixedText에서 사용 */
 export const KO_LINE_HEIGHT_RATIO = 1.5;

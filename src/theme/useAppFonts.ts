@@ -23,8 +23,9 @@ const korean = {
 };
 
 // 테마별로 실제 쓰는 굵기만 등록한다. 키는 tokens.ts의 fonts 이름과 같다.
+// 'polish'는 'custom'과 같은 글꼴 조합(Plex Sans KR + Nunito Sans)
 const FONT_MAP =
-  THEME === 'custom'
+  THEME === 'custom' || THEME === 'polish'
     ? {
         ...korean,
         NunitoSans_300Light, // 워드마크

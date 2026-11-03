@@ -38,7 +38,8 @@ type Props = Omit<TextProps, 'children'> & {
  *   (sans 스타일 → Plex Sans KR 1.5, mono 스타일 → Plex Mono 1.3) 글꼴이 섞여도 줄 높이가 바뀌지 않는다.
  */
 export function MixedText({ children, style, weight, ...rest }: Props) {
-  if (THEME !== 'custom') {
+  // 'polish'도 'custom'처럼 한글/영문 글꼴을 나눈다
+  if (THEME !== 'custom' && THEME !== 'polish') {
     return (
       <Text style={style} {...rest}>
         {children}
