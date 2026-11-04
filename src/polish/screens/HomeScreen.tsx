@@ -1,6 +1,5 @@
-import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useState } from 'react';
-import { AppState, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api, isHighOrAbove } from '../../api';
@@ -17,15 +16,11 @@ import { colors, fontSize, fonts, riskColors } from '../../theme/tokens';
 import { type } from '../../theme/typography';
 import { FadeSwap, FadeUp } from '../motion';
 import { Card, P, PEventRow, PIcon, Press, SectionHead, StaleNotice, staleDim } from '../ui';
+import { usePolling } from '../usePolling';
 
 const RECENT_COUNT = 5;
 /** 현재 상태에 최근 이벤트를 보여 주는 시간. 이보다 오래된 이벤트만 있으면 "이상 없음" */
 const STATUS_WINDOW_MS = 30 * 60 * 1000;
-/**
- * 홈이 보이는 동안 새 이벤트를 확인하는 간격.
- * 실서버는 MEDIUM·HIGH만 푸시를 보내서(LOW·분석 중은 푸시 없음) 푸시만으로는 홈이 갱신되지 않는 이벤트가 있다
- */
-const POLL_MS = 15 * 1000;
 /** 30분이 지났는지 다시 보는 간격 */
 const CLOCK_TICK_MS = 60 * 1000;
 
@@ -42,21 +37,19 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
     const t = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
     return () => clearInterval(t);
   }, []);
-  // 조용한 새로고침(자동 확인·당겨서 새로고침) 중에는 "최신 정보로 바꾸는 중" 표시와 흐림을 띄우지 않는다
+  // 홈이 보이는 동안 1초마다 조용히 새 이벤트 확인(usePolling). 조용한 확인 중에는 "최신 정보로 바꾸는 중" 표시와 흐림을 띄우지 않는다
   const reloadEvents = events.reload;
   const reloadSummary = summary.reload;
-  const [quiet, setQuiet] = useState(false);
-  const [pulling, setPulling] = useState(false);
-  const refreshQuietly = useCallback(async () => {
-    setQuiet(true);
+  const refresh = useCallback(async () => {
     try {
       await Promise.all([reloadEvents(), reloadSummary()]);
     } finally {
-      setQuiet(false);
       setNow(Date.now());
     }
   }, [reloadEvents, reloadSummary]);
+  const { quiet, refreshQuietly } = usePolling(refresh);
   // 당겨서 새로고침
+  const [pulling, setPulling] = useState(false);
   const onPull = useCallback(async () => {
     setPulling(true);
     try {
@@ -65,15 +58,6 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
       setPulling(false);
     }
   }, [refreshQuietly]);
-  // 홈이 보이고 앱이 앞에 있는 동안 15초마다 새 이벤트 확인. 다른 탭·화면으로 가거나 앱이 뒤로 가면 멈춘다
-  useFocusEffect(
-    useCallback(() => {
-      const t = setInterval(() => {
-        if (AppState.currentState === 'active') void refreshQuietly();
-      }, POLL_MS);
-      return () => clearInterval(t);
-    }, [refreshQuietly]),
-  );
 
   const list = events.data ?? [];
   const latest = list[0];

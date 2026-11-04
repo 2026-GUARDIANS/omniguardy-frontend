@@ -13,6 +13,7 @@ import { colors, fontSize, fonts, riskColors } from '../../theme/tokens';
 import { type } from '../../theme/typography';
 import { Crossfade, FadeUp } from '../motion';
 import { P, PEventRow, Press, StaleNotice, staleDim } from '../ui';
+import { usePolling } from '../usePolling';
 
 // 필터는 서버가 해당 위험도만 거른다(screens/EventsScreen.tsx와 같음)
 type RiskFilter = Exclude<RiskLevel, 'CRITICAL'>;
@@ -38,8 +39,11 @@ export function EventsScreen({ navigation }: TabScreenProps<'Events'>) {
     () => api.events.list(filter === 'ALL' ? undefined : { risk: filter }),
     [filter, eventsVersion],
   );
+  // 화면이 보이는 동안 1초마다 조용히 새 이벤트 확인(지금 고른 필터 그대로)
+  const { quiet } = usePolling(events.reload);
+  const loading = events.loading && !quiet;
   const sections = useMemo(() => groupByDay(events.data ?? []), [events.data]);
-  const stale = !!events.data && (events.loading || !!events.error);
+  const stale = !!events.data && (loading || !!events.error);
   const openEvent = useCallback((id: string) => navigation.navigate('EventDetail', { eventId: id }), [navigation]);
 
   // 진입 애니메이션 순서: 날짜 묶음을 지나며 줄마다 하나씩
@@ -66,7 +70,7 @@ export function EventsScreen({ navigation }: TabScreenProps<'Events'>) {
       </View>
 
       <View style={s.notice}>
-        <StaleNotice hasData={!!events.data} loading={events.loading} error={events.error} onRetry={events.reload} />
+        <StaleNotice hasData={!!events.data} loading={loading} error={events.error} onRetry={events.reload} />
       </View>
 
       <SectionList
