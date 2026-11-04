@@ -1,5 +1,6 @@
+import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { api, isHighOrAbove } from '../../api';
@@ -20,8 +21,11 @@ import { Card, P, PEventRow, PIcon, Press, SectionHead, StaleNotice, staleDim } 
 const RECENT_COUNT = 5;
 /** 현재 상태에 최근 이벤트를 보여 주는 시간. 이보다 오래된 이벤트만 있으면 "이상 없음" */
 const STATUS_WINDOW_MS = 30 * 60 * 1000;
-/** 화면이 켜져 있는 동안 서버에서 다시 불러오는 간격 */
-const AUTO_RELOAD_MS = 30 * 60 * 1000;
+/**
+ * 홈이 보이는 동안 새 이벤트를 확인하는 간격.
+ * 실서버는 MEDIUM·HIGH만 푸시를 보내서(LOW·분석 중은 푸시 없음) 푸시만으로는 홈이 갱신되지 않는 이벤트가 있다
+ */
+const POLL_MS = 15 * 1000;
 /** 30분이 지났는지 다시 보는 간격 */
 const CLOCK_TICK_MS = 60 * 1000;
 
@@ -38,17 +42,38 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
     const t = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
     return () => clearInterval(t);
   }, []);
-  // 화면에 들어올 때·새 이벤트가 올 때 말고도 30분마다 다시 불러온다(실시간 연결이 끊겼을 때 대비)
+  // 조용한 새로고침(자동 확인·당겨서 새로고침) 중에는 "최신 정보로 바꾸는 중" 표시와 흐림을 띄우지 않는다
   const reloadEvents = events.reload;
   const reloadSummary = summary.reload;
-  useEffect(() => {
-    const t = setInterval(() => {
-      void reloadEvents();
-      void reloadSummary();
+  const [quiet, setQuiet] = useState(false);
+  const [pulling, setPulling] = useState(false);
+  const refreshQuietly = useCallback(async () => {
+    setQuiet(true);
+    try {
+      await Promise.all([reloadEvents(), reloadSummary()]);
+    } finally {
+      setQuiet(false);
       setNow(Date.now());
-    }, AUTO_RELOAD_MS);
-    return () => clearInterval(t);
+    }
   }, [reloadEvents, reloadSummary]);
+  // 당겨서 새로고침
+  const onPull = useCallback(async () => {
+    setPulling(true);
+    try {
+      await refreshQuietly();
+    } finally {
+      setPulling(false);
+    }
+  }, [refreshQuietly]);
+  // 홈이 보이고 앱이 앞에 있는 동안 15초마다 새 이벤트 확인. 다른 탭·화면으로 가거나 앱이 뒤로 가면 멈춘다
+  useFocusEffect(
+    useCallback(() => {
+      const t = setInterval(() => {
+        if (AppState.currentState === 'active') void refreshQuietly();
+      }, POLL_MS);
+      return () => clearInterval(t);
+    }, [refreshQuietly]),
+  );
 
   const list = events.data ?? [];
   const latest = list[0];
@@ -57,8 +82,8 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
   const statusText = events.data ? (current?.title ?? '이상 없음') : '—';
   // 현재 상태가 HIGH 이상이면 경고 아이콘·위험도 색, 아니면 방패 아이콘·세이지
   const danger = !!current && isHighOrAbove(current.risk);
-  const eventsStale = !!events.data && (events.loading || !!events.error);
-  const summaryStale = !!summary.data && (summary.loading || !!summary.error);
+  const eventsStale = !!events.data && ((events.loading && !quiet) || !!events.error);
+  const summaryStale = !!summary.data && ((summary.loading && !quiet) || !!summary.error);
   const lastDetectedAt = summary.data?.lastDetectedAt ?? null;
   const lastText = lastDetectedAt
     ? daysAgo(lastDetectedAt) === 0
@@ -84,7 +109,18 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
         </Press>
       </View>
 
-      <ScrollView contentContainerStyle={s.content}>
+      <ScrollView
+        contentContainerStyle={s.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={pulling}
+            onRefresh={onPull}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+            progressBackgroundColor={colors.surface}
+          />
+        }
+      >
         {/* 현재 상태 */}
         <FadeUp index={0}>
           <Card style={s.status}>
@@ -101,7 +137,7 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
                 {statusText}
               </Text>
             </FadeSwap>
-            <StaleNotice hasData={!!events.data} loading={events.loading} error={events.error} onRetry={events.reload} />
+            <StaleNotice hasData={!!events.data} loading={events.loading && !quiet} error={events.error} onRetry={events.reload} />
             {!events.data ? (
               <LoadState loading={events.loading} error={events.error} onRetry={events.reload} hasData={false} />
             ) : null}
@@ -152,7 +188,7 @@ export function HomeScreen({ navigation }: TabScreenProps<'Home'>) {
               </View>
             </Card>
           </View>
-          <StaleNotice hasData={!!summary.data} loading={summary.loading} error={summary.error} onRetry={summary.reload} />
+          <StaleNotice hasData={!!summary.data} loading={summary.loading && !quiet} error={summary.error} onRetry={summary.reload} />
           {!summary.data ? (
             <LoadState loading={false} error={summary.error} onRetry={summary.reload} hasData={false} />
           ) : null}
