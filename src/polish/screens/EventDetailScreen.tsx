@@ -14,12 +14,16 @@ import { useRealtimeAlert } from '../../state/RealtimeAlertContext';
 import { colors, fontSize, fonts } from '../../theme/tokens';
 import { FadeUp } from '../motion';
 import { Card, P, PBackHeader, PButton, StaleNotice, staleDim } from '../ui';
+import { usePolling } from '../usePolling';
 
 // 'polish' 이벤트 상세. 기능은 screens/EventDetailScreen.tsx와 같다(영상, 제목·시각·위험도, Agent 판단, 확인 완료)
 export function EventDetailScreen({ navigation, route }: RootScreenProps<'EventDetail'>) {
   const { eventId } = route.params;
   const { clearAlert } = useRealtimeAlert();
-  const { data: event, loading, error, reload } = useApiData(() => api.events.get(eventId), [eventId]);
+  const { data: event, loading: fetching, error, reload } = useApiData(() => api.events.get(eventId), [eventId]);
+  // 화면이 보이는 동안 1초마다 조용히 다시 확인(분석 결과·위험도·상태가 바뀌면 바로 반영). 영상은 다시 불러오지 않는다
+  const { quiet } = usePolling(reload);
+  const loading = fetching && !quiet;
   const [acking, setAcking] = useState(false);
   const [ackError, setAckError] = useState<string | null>(null);
   const stale = !!event && (loading || !!error);
